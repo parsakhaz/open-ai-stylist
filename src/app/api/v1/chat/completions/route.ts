@@ -2,78 +2,18 @@ import { NextResponse } from 'next/server';
 
 export const maxDuration = 60;
 
-// This function transforms the Llama API's streaming chunk format
-// to the OpenAI-compatible format that the Vercel AI SDK expects.
-function transformLlamaStream(): TransformStream<Uint8Array, Uint8Array> {
-  const decoder = new TextDecoder();
-  const encoder = new TextEncoder();
-  let buffer = '';
-
-  return new TransformStream({
-    transform(chunk, controller) {
-      buffer += decoder.decode(chunk);
-
-      // Process all complete "data: ..." lines in the buffer
-      while (true) {
-        const newlineIndex = buffer.indexOf('\n\n');
-        if (newlineIndex === -1) break;
-
-        const eventLine = buffer.slice(0, newlineIndex);
-        buffer = buffer.slice(newlineIndex + 2);
-
-        if (!eventLine.startsWith('data: ')) continue;
-
-        try {
-          const jsonData = JSON.parse(eventLine.substring(6));
-          let transformedData;
-
-          // Condition 1: Handle tool calls
-          if (jsonData.completion_message?.stop_reason === 'tool_calls') {
-            transformedData = {
-              id: jsonData.id, object: 'chat.completion.chunk', created: Math.floor(Date.now() / 1000), model: jsonData.model,
-              choices: [{
-                index: 0, delta: { role: 'assistant', content: null,
-                  tool_calls: jsonData.completion_message.tool_calls.map((tc: any, index: number) => ({
-                      index: index, id: tc.id, type: 'function',
-                      function: { name: tc.function.name, arguments: tc.function.arguments }
-                  }))
-                }, finish_reason: 'tool_calls',
-              }],
-            };
-          } 
-          // Condition 2: Handle regular text content
-          else if (jsonData.completion_message?.content?.text) {
-            transformedData = {
-              id: jsonData.id, object: 'chat.completion.chunk', created: Math.floor(Date.now() / 1000), model: jsonData.model,
-              choices: [{
-                index: 0, delta: { content: jsonData.completion_message.content.text },
-                finish_reason: jsonData.completion_message.stop_reason,
-              }],
-            };
-          }
-
-          // --- FIX ---
-          // Only enqueue data if we actually transformed it.
-          // This prevents sending empty message parts to the client.
-          if (transformedData) {
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify(transformedData)}\n\n`));
-          }
-
-        } catch (e) {
-          console.error('Error parsing or transforming Llama chunk:', e, 'Chunk:', eventLine);
-        }
-      }
-    },
-  });
-}
-
-
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const isStreaming = body.stream === true;
 
-    const llamaApiUrl = `${process.env.LLAMA_API_BASE_URL}/chat/completions`;
+    // --- FINAL FIX: Intelligently construct the correct API URL ---
+    // This robustly handles if LLAMA_API_BASE_URL is `https://api.llama.com` or `https://api.llama.com/v1`
+    const baseUrl = new URL(process.env.LLAMA_API_BASE_URL!);
+    // We construct the final URL by setting the pathname directly, which avoids duplicate segments.
+    const llamaApiUrl = new URL('/compat/v1/chat/completions', baseUrl).toString();
+    
+    console.log(`[llama-proxy] Forwarding request to: ${llamaApiUrl}`);
 
     const response = await fetch(llamaApiUrl, {
       method: 'POST',
@@ -95,10 +35,19 @@ export async function POST(req: Request) {
       if (!response.body) {
           return new NextResponse("The response body is empty for streaming.", { status: 500 });
       }
-      // If streaming, pipe through the transformer for the AI SDK
-      const transformedStream = response.body.pipeThrough(transformLlamaStream());
-      return new Response(transformedStream, {
-          headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' }
+
+      // --- FIX: Pass the stream directly through ---
+      // The Llama /compat/v1 endpoint already returns an OpenAI-compatible stream.
+      // We don't need to transform it; we can just forward it.
+      // This eliminates the risk of incorrect transformations.
+      console.log('[llama-proxy] Passing stream through directly without transformation.');
+      
+      return new Response(response.body, {
+          headers: { 
+            'Content-Type': 'text/event-stream', 
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive'
+          }
       });
     } else {
       // If not streaming, just return the raw JSON from Llama.

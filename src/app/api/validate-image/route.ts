@@ -99,14 +99,15 @@ export async function POST(req: Request) {
       throw new Error(`Proxy call failed: ${errorBody.error || 'Unknown proxy error'}`);
     }
 
-    // 4. Parse the raw Llama API response that our proxy forwarded
+    // 4. Parse the OpenAI-compatible response that our proxy now forwards
     const responseData = await proxyResponse.json();
-    console.log('[validate-image] Llama API response received via proxy:', JSON.stringify(responseData, null, 2));
+    console.log('[validate-image] OpenAI-compatible response received via proxy:', JSON.stringify(responseData, null, 2));
 
-    // Extract the content from the Llama-specific `completion_message`
-    const aiResponseText = responseData.completion_message?.content?.text;
+    // --- FIX: The /compat/v1 endpoint returns a standard OpenAI response structure. ---
+    // We now need to look inside `choices[0].message.content` instead of `completion_message`.
+    const aiResponseText = responseData.choices?.[0]?.message?.content;
     if (!aiResponseText) {
-      throw new Error("AI response did not contain text content in completion_message.");
+      throw new Error("AI response did not contain text content in the expected format (choices[0].message.content).");
     }
     
     let validationResult;
