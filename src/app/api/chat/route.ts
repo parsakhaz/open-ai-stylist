@@ -13,9 +13,10 @@ export const maxDuration = 30;
 const vercelURL = process.env.VERCEL_URL;
 const appURL = vercelURL ? `https://${vercelURL}` : 'http://localhost:3000';
 
-// Create a client that points to OUR OWN proxy route.
+// FIX: Point the baseURL to the new /api/v1 path.
+// The SDK will automatically add "/chat/completions" to this.
 const llama = createOpenAICompatible({
-  baseURL: `${appURL}/api/llama-proxy`,
+  baseURL: `${appURL}/api/v1`,
   name: 'llama',
   // No API key is needed here, because the proxy handles it.
 });
@@ -48,13 +49,19 @@ export async function POST(req: Request) {
     console.log('[api/chat] Received request with messages:', JSON.stringify(messages, null, 2));
 
     // LOGGING: Using proxy for Llama API calls
-    console.log(`[api/chat] Using Llama proxy at: ${appURL}/api/llama-proxy`);
+    console.log(`[api/chat] Using Llama proxy base at: ${appURL}/api/v1`);
 
     // Correct: No 'await' here. streamText returns the result object immediately.
     const result = streamText({
-      // MODIFICATION: Use the correct model name from Meta Llama API docs
       model: llama('Llama-4-Maverick-17B-128E-Instruct-FP8'),
-      system: `You are "Chad", a friendly and enthusiastic AI fashion stylist. Your goal is to help the user discover new clothing items. You MUST use the 'searchProducts' tool to find items whenever the user expresses interest in any type of clothing. Do not invent products. When the tool returns products, you MUST show them to the user. Do not just say you found them, display the results.`,
+      
+      // --- FIX: Make the instructions more explicit ---
+      system: `You are "Chad", a friendly and enthusiastic AI fashion stylist. Your goal is to help the user discover new clothing items. 
+      - You MUST use the 'searchProducts' tool to find items whenever the user expresses interest in any type of clothing. Do not invent products.
+      - After the 'searchProducts' tool returns the results, you MUST present them to the user. 
+      - CRITICALLY: You must also include a friendly, conversational text response introducing the products, for example: 'Awesome, check out these streetwear options I found for you!' or 'You got it! Here are some great items that match your search.'. 
+      - DO NOT end the turn silently after a tool call. Always provide a text message.`,
+      
       messages,
       tools: {
         searchProducts: tool({

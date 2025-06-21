@@ -11,9 +11,9 @@ export const maxDuration = 60; // Allow up to 60 seconds for this complex task
 const vercelURL = process.env.VERCEL_URL;
 const appURL = vercelURL ? `https://${vercelURL}` : 'http://localhost:3000';
 
-// Create a client that points to OUR OWN proxy route.
+// FIX: Point the baseURL to the new /api/v1 path.
 const llama = createOpenAICompatible({
-  baseURL: `${appURL}/api/llama-proxy`,
+  baseURL: `${appURL}/api/v1`,
   name: 'llama',
   // No API key is needed here, because the proxy handles it.
 });
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
     });
 
     // LOGGING: Using proxy for Llama API calls
-    console.log(`[api/generate-moodboard] Using Llama proxy at: ${appURL}/api/llama-proxy`);
+    console.log(`[api/generate-moodboard] Using Llama proxy base at: ${appURL}/api/v1`);
 
     // Step 1: MOCK Try-On image generation
     const tryOnUrlMap: Record<string, string> = {};
