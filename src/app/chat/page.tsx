@@ -54,10 +54,16 @@ export default function ChatPage() {
     moodboards,
   } = useAppStore();
 
-  // useChat now gets `toolInvocations` to render UI
-  const { messages, input, handleInputChange, handleSubmit } = useChat({
+  const { 
+    messages, 
+    input, 
+    handleInputChange, 
+    handleSubmit, 
+    isLoading: isChatLoading,
+    setMessages
+  } = useChat({
     api: '/api/chat',
-    // LOGGING: Add onError and onResponse handlers to the useChat hook.
+    id: 'ai-fashion-chat-v1',
     onError: (error) => {
       console.error('[useChat] Hook encountered an error:', error);
       alert('A connection error occurred. Please try again.');
@@ -67,31 +73,25 @@ export default function ChatPage() {
       console.log('[useChat] Received response from API with status:', response.status);
     },
     onFinish: (message) => {
-      // LOGGING: See the final composed message from the AI.
       console.log('[useChat] Stream finished. Final message:', message);
       setIsLoading(false);
     },
   });
 
   useEffect(() => {
-    // LOGGING: Track navigation checks.
     console.log('[ChatPage] Checking navigation requirements. Approved images:', approvedModelImageUrls.length);
-    
-    // This check prevents infinite loops during development hot-reloads
     if (typeof window !== 'undefined' && approvedModelImageUrls.length === 0) {
       console.log('[ChatPage] Insufficient approved images, redirecting to onboarding');
       router.push('/onboarding');
     }
   }, [approvedModelImageUrls, router]);
 
-  // LOGGING: Log current state for debugging.
   console.log('[ChatPage] Current state - Messages:', messages.length, 'Selected products:', selectedProducts.length, 'Existing moodboards:', moodboards.length);
 
   const handleCreateBoard = async () => {
     if (selectedProducts.length === 0) return;
     setIsLoading(true);
 
-    // LOGGING: Log the start of the mood board creation process.
     console.log('[ChatPage] Initiating mood board creation with products:', selectedProducts.map(p => p.name));
 
     try {
@@ -100,7 +100,6 @@ export default function ChatPage() {
         existingMoodboards: moodboards.map(b => ({title: b.title, description: b.description}))
       };
       
-      // LOGGING: See the exact data being sent to the backend.
       console.log('[ChatPage] Sending to /api/generate-moodboard:', payload);
 
       const response = await fetch('/api/generate-moodboard', {
@@ -109,7 +108,6 @@ export default function ChatPage() {
         body: JSON.stringify(payload),
       });
 
-      // LOGGING: Check the HTTP response status.
       console.log(`[ChatPage] Generate moodboard API response status: ${response.status}`);
 
       if (!response.ok) {
@@ -118,7 +116,6 @@ export default function ChatPage() {
         throw new Error('Generate moodboard request failed');
       }
 
-      // LOGGING: See the raw response before parsing.
       const responseText = await response.text();
       console.log('[ChatPage] Generate moodboard API raw response:', responseText);
       
@@ -127,7 +124,6 @@ export default function ChatPage() {
 
       if (result.error) throw new Error(result.error);
       
-      // LOGGING: See the data before it's passed to the state store.
       console.log('[ChatPage] Calling createOrUpdateMoodboard with:', {
         title: result.categorization.boardTitle,
         description: result.categorization.boardDescription,
@@ -158,16 +154,32 @@ export default function ChatPage() {
     }
   };
 
+  const handleNewChat = () => {
+    setMessages([]);
+    console.log('[ChatPage] New chat started, history cleared.');
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-50">
+      <div className="p-2 bg-white border-b flex justify-end">
+        <button 
+          onClick={handleNewChat}
+          className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-1 px-3 rounded-md transition-colors"
+        >
+          New Chat
+        </button>
+      </div>
+
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((m: Message) => (
           <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-lg p-3 rounded-lg shadow-md ${m.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800'}`}>
-              {/* Correct: Render message parts instead of just content */}
               {m.parts?.map((part, index) => {
                 if (part.type === 'text') {
-                  return <p key={index}>{part.text}</p>;
+                  // --- FIX: Use a more unique key combining the message ID and the index ---
+                  // This tells React that this <p> tag is unique to this specific message,
+                  // forcing it to re-render the content as it changes.
+                  return <p key={`${m.id}-${index}`}>{part.text}</p>;
                 }
                 if (part.type === 'tool-invocation') {
                   const toolInvocation = part.toolInvocation as ToolInvocation;
@@ -199,14 +211,14 @@ export default function ChatPage() {
 
       <form onSubmit={(e) => {
         console.log('[ChatPage] Form submitted with input:', input);
-        setIsLoading(true);
         handleSubmit(e);
       }} className="p-4 bg-white border-t sticky bottom-0 z-10">
         <input
           value={input}
           onChange={handleInputChange}
           placeholder="Say something like 'show me some streetwear pants'..."
-          className="w-full p-3 border rounded-md focus:ring-2 focus:ring-indigo-500"
+          className="w-full p-3 border rounded-md focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
+          disabled={isChatLoading}
         />
       </form>
     </div>

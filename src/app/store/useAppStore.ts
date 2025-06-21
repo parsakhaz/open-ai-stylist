@@ -143,6 +143,8 @@ export const useAppStore = create<AppState>()(
     {
       name: 'ai-fashion-storage',
       partialize: (state) => ({
+          modelImages: state.modelImages,
+          approvedModelImageUrls: state.approvedModelImageUrls,
           selectedProducts: state.selectedProducts,
           moodboards: state.moodboards,
       }),
