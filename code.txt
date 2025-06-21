@@ -1,0 +1,1567 @@
+Project Path: open-ai-stylist
+
+Source Tree:
+
+```txt
+open-ai-stylist
+├── next.config.ts
+├── package.json
+├── src
+│   └── app
+│       ├── api
+│       │   ├── chat
+│       │   │   └── route.ts
+│       │   ├── delete-image
+│       │   │   └── route.ts
+│       │   ├── generate-moodboard
+│       │   │   └── route.ts
+│       │   ├── get-model-images
+│       │   │   └── route.ts
+│       │   ├── llama-proxy
+│       │   │   └── route.ts
+│       │   └── validate-image
+│       │       └── route.ts
+│       ├── chat
+│       │   └── page.tsx
+│       ├── gallery
+│       │   └── page.tsx
+│       ├── globals.css
+│       ├── layout.tsx
+│       ├── onboarding
+│       │   └── page.tsx
+│       ├── page.tsx
+│       └── store
+│           └── useAppStore.ts
+├── tailwind.config.ts
+└── tsconfig.json
+
+```
+
+`open-ai-stylist/next.config.ts`:
+
+```ts
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  /* config options here */
+};
+
+export default nextConfig;
+
+```
+
+`open-ai-stylist/package.json`:
+
+```json
+{
+  "name": "open-ai-stylist",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@ai-sdk/openai-compatible": "^0.2.14",
+    "@ai-sdk/react": "^1.2.12",
+    "ai": "^4.3.16",
+    "next": "15.3.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "uuid": "^11.1.0",
+    "zod": "^3.25.67",
+    "zustand": "^5.0.5"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/uuid": "^10.0.0",
+    "eslint": "^9",
+    "eslint-config-next": "15.3.4",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
+
+```
+
+`open-ai-stylist/src/app/api/chat/route.ts`:
+
+```ts
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { streamText, tool } from 'ai';
+import { z } from 'zod';
+import { promises as fs } from 'fs';
+import path from 'path';
+
+console.log('[api/chat] Module loaded.');
+
+export const maxDuration = 30;
+
+// This is the URL of our Next.js app.
+// It's crucial for server-to-server API calls.
+const vercelURL = process.env.VERCEL_URL;
+const appURL = vercelURL ? `https://${vercelURL}` : 'http://localhost:3000';
+
+// Create a client that points to OUR OWN proxy route.
+const llama = createOpenAICompatible({
+  baseURL: `${appURL}/api/llama-proxy`,
+  name: 'llama',
+  // No API key is needed here, because the proxy handles it.
+});
+
+interface Product {
+  id: string;
+  name: string;
+  imageUrl: string;
+  category: string;
+  buyLink: string;
+  style_tags: string[];
+}
+
+// This can be defined outside the function to avoid re-reading the file on every call
+// For a real app, this would come from a database. For now, let's cache it.
+let productCatalog: Product[] | null = null;
+async function getProducts(): Promise<Product[]> {
+  if (productCatalog) return productCatalog;
+  const jsonDirectory = path.join(process.cwd(), 'public', 'data');
+  const fileContents = await fs.readFile(path.join(jsonDirectory, 'products.json'), 'utf8');
+  productCatalog = JSON.parse(fileContents);
+  return productCatalog || [];
+}
+
+export async function POST(req: Request) {
+  try {
+    const { messages } = await req.json();
+
+    // LOGGING: See the incoming chat history.
+    console.log('[api/chat] Received request with messages:', JSON.stringify(messages, null, 2));
+
+    // LOGGING: Using proxy for Llama API calls
+    console.log(`[api/chat] Using Llama proxy at: ${appURL}/api/llama-proxy`);
+
+    // Correct: No 'await' here. streamText returns the result object immediately.
+    const result = streamText({
+      // MODIFICATION: Use the correct model name from Meta Llama API docs
+      model: llama('Llama-4-Maverick-17B-128E-Instruct-FP8'),
+      system: `You are "Chad", a friendly and enthusiastic AI fashion stylist. Your goal is to help the user discover new clothing items. You MUST use the 'searchProducts' tool to find items whenever the user expresses interest in any type of clothing. Do not invent products. When the tool returns products, you MUST show them to the user. Do not just say you found them, display the results.`,
+      messages,
+      tools: {
+        searchProducts: tool({
+          description: 'Searches the product catalog for clothing items based on a user query, such as style, color, or item type (e.g., "pants", "streetwear fits", "korean minimal shirt").',
+          parameters: z.object({
+            query: z.string().describe('The user\'s search query. Be descriptive. E.g., "edgy black pants for streetwear".'),
+            itemType: z.string().optional().describe('Specific item category like "pants", "upper-body", "dress", "jacket".'),
+          }),
+          execute: async ({ query, itemType }) => {
+            // LOGGING: Log when the tool starts executing and with what parameters.
+            console.log(`[tool:searchProducts] Executing with query: "${query}", itemType: "${itemType}"`);
+
+            const products = await getProducts();
+            
+            // LOGGING: Confirm the product catalog was loaded.
+            console.log(`[tool:searchProducts] Loaded ${products.length} products from catalog.`);
+            
+            const lowerCaseQuery = query.toLowerCase();
+            
+            let filteredProducts = products.filter(p => {
+              const nameMatch = p.name.toLowerCase().includes(lowerCaseQuery);
+              const tagMatch = p.style_tags.some((tag:string) => lowerCaseQuery.includes(tag.toLowerCase()));
+              const queryInName = p.name.toLowerCase().split(' ').some((word: string) => lowerCaseQuery.includes(word));
+              return nameMatch || tagMatch || queryInName;
+            });
+
+            // LOGGING: See how many products matched the query before other filters.
+            console.log(`[tool:searchProducts] Found ${filteredProducts.length} products after initial filter.`);
+
+            if (itemType) {
+              filteredProducts = filteredProducts.filter(p => p.category.toLowerCase() === itemType.toLowerCase());
+              // LOGGING: See how many products matched after category filter.
+              console.log(`[tool:searchProducts] Found ${filteredProducts.length} products after category filter.`);
+            }
+            
+            // Return a structured result for the client to render
+            const finalResults = filteredProducts.slice(0, 8).map(p => ({
+                id: p.id,
+                name: p.name,
+                imageUrl: p.imageUrl,
+                category: p.category,
+                buyLink: p.buyLink, // Ensure you return all needed fields
+                style_tags: p.style_tags,
+            }));
+
+            // LOGGING: See exactly what the tool is returning to the AI model.
+            console.log('[tool:searchProducts] Returning results to model:', finalResults);
+            return finalResults;
+          },
+        }),
+      },
+    });
+
+    return result.toDataStreamResponse();
+  } catch (error) {
+    // LOGGING: Add a top-level try-catch to catch errors before streaming starts (e.g., req.json() fails).
+    console.error('[api/chat] CRITICAL ERROR:', error);
+    return new Response('An internal error occurred', { status: 500 });
+  }
+} 
+```
+
+`open-ai-stylist/src/app/api/delete-image/route.ts`:
+
+```ts
+import { promises as fs } from 'fs';
+import path from 'path';
+
+const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
+const CONFIG_FILE = path.join(process.cwd(), 'data', 'model-images.json');
+
+// Helper function to read the config file
+async function readConfig() {
+  try {
+    const data = await fs.readFile(CONFIG_FILE, 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.log('[api/delete-image] Config file not found, returning empty structure');
+    return { images: [] };
+  }
+}
+
+// Helper function to write to the config file
+async function writeConfig(data: any) {
+  await fs.writeFile(CONFIG_FILE, JSON.stringify(data, null, 2), 'utf-8');
+}
+
+// We'll use the HTTP DELETE method, which is standard for deletion actions
+export async function DELETE(req: Request) {
+  try {
+    const { imageUrl } = await req.json();
+
+    if (!imageUrl || typeof imageUrl !== 'string') {
+      console.error('[api/delete-image] Invalid image URL provided:', imageUrl);
+      return new Response(JSON.stringify({ message: 'Invalid image URL provided.' }), { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    console.log(`[api/delete-image] Received request to delete image: ${imageUrl}`);
+
+    // --- 1. Delete the physical file ---
+    // The imageUrl is a public path like '/uploads/some-uuid.png'
+    // We need to convert it to a full system path.
+    const filename = path.basename(imageUrl);
+    const localFilePath = path.join(UPLOADS_DIR, filename);
+    
+    try {
+      await fs.unlink(localFilePath);
+      console.log(`[api/delete-image] Successfully deleted file: ${localFilePath}`);
+    } catch (error: any) {
+      // If the file doesn't exist, that's okay, maybe it was already deleted.
+      // We'll log it but continue on to remove it from the config.
+      if (error.code === 'ENOENT') {
+        console.warn(`[api/delete-image] File not found, but proceeding to remove from config: ${localFilePath}`);
+      } else {
+        console.error(`[api/delete-image] Error deleting file: ${error}`);
+        throw error; // Re-throw other unexpected errors
+      }
+    }
+
+    // --- 2. Remove the entry from the JSON config file ---
+    const config = await readConfig();
+    const initialCount = config.images.length;
+    
+    // Filter out the image with the matching URL
+    config.images = config.images.filter((img: { url: string }) => img.url !== imageUrl);
+    
+    const finalCount = config.images.length;
+    
+    if (initialCount === finalCount) {
+        console.warn(`[api/delete-image] Image URL not found in config file: ${imageUrl}`);
+    } else {
+        console.log(`[api/delete-image] Removed ${initialCount - finalCount} entries from config file`);
+    }
+
+    await writeConfig(config);
+    console.log(`[api/delete-image] Successfully updated config file`);
+
+    // --- 3. Send a success response ---
+    return new Response(JSON.stringify({ 
+      message: 'Image deleted successfully.',
+      deletedUrl: imageUrl 
+    }), { 
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    console.error('[api/delete-image] An error occurred:', error);
+    return new Response(JSON.stringify({ 
+      message: 'An internal server error occurred.' 
+    }), { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+} 
+```
+
+`open-ai-stylist/src/app/api/generate-moodboard/route.ts`:
+
+```ts
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { generateObject } from 'ai';
+import { z } from 'zod';
+
+console.log('[api/generate-moodboard] Module loaded.');
+
+export const maxDuration = 60; // Allow up to 60 seconds for this complex task
+
+// This is the URL of our Next.js app.
+// It's crucial for server-to-server API calls.
+const vercelURL = process.env.VERCEL_URL;
+const appURL = vercelURL ? `https://${vercelURL}` : 'http://localhost:3000';
+
+// Create a client that points to OUR OWN proxy route.
+const llama = createOpenAICompatible({
+  baseURL: `${appURL}/api/llama-proxy`,
+  name: 'llama',
+  // No API key is needed here, because the proxy handles it.
+});
+
+// Correct: Define a schema for the categorization result
+const categorizationSchema = z.object({
+    action: z.enum(["ADD_TO_EXISTING", "CREATE_NEW"]),
+    boardTitle: z.string().describe('If action is "ADD_TO_EXISTING", the exact title of the board. If "CREATE_NEW", a new creative title.'),
+    boardDescription: z.string().describe('A one-sentence description for the mood board.'),
+});
+
+interface Product {
+  id: string;
+  name: string;
+  imageUrl: string;
+  category: string;
+  buyLink: string;
+  style_tags: string[];
+}
+
+interface MoodboardSummary {
+  title: string;
+  description: string;
+}
+
+export async function POST(req: Request) {
+  // LOGGING: Announce the start of the request.
+  console.log('[api/generate-moodboard] Received a request.');
+
+  try {
+    const { selectedProducts, existingMoodboards }: { 
+      selectedProducts: Product[], 
+      existingMoodboards: MoodboardSummary[] 
+    } = await req.json();
+
+    // LOGGING: See exactly what the client sent.
+    console.log('[api/generate-moodboard] Request body:', { 
+      selectedProducts: selectedProducts.map(p => p.name), // Log names for brevity
+      existingMoodboards 
+    });
+
+    // LOGGING: Using proxy for Llama API calls
+    console.log(`[api/generate-moodboard] Using Llama proxy at: ${appURL}/api/llama-proxy`);
+
+    // Step 1: MOCK Try-On image generation
+    const tryOnUrlMap: Record<string, string> = {};
+    for (const product of selectedProducts) {
+      // For the POC, we just use the original product image as the "try-on"
+      tryOnUrlMap[product.id] = product.imageUrl;
+    }
+
+    // LOGGING: Confirm try-on mapping was created.
+    console.log('[api/generate-moodboard] Created try-on URL map:', tryOnUrlMap);
+
+    // Step 2: Ask Llama to categorize the selections using generateObject
+    const productDescriptions = selectedProducts.map((p: Product) => p.name).join(', ');
+    const boardSummaries = existingMoodboards.map((b: MoodboardSummary) => `"${b.title}": ${b.description}`).join('; ');
+    const prompt = `A user has selected the following fashion items: "${productDescriptions}". Their existing mood boards are: ${boardSummaries || 'None'}. Analyze the items and decide if they fit an existing board or if a new one should be created.`;
+
+    // LOGGING: See the exact prompt sent to the AI. This is vital for debugging AI behavior.
+    console.log('[api/generate-moodboard] Prompt for categorization:', prompt);
+
+    const { object: categorizationResult } = await generateObject({
+      // MODIFICATION: Use the correct model name from Meta Llama API docs
+      model: llama('Llama-4-Maverick-17B-128E-Instruct-FP8'),
+      schema: categorizationSchema,
+      system: `You are an AI mood board curator. Your task is to decide how to categorize a user's selected items.`,
+      prompt,
+    });
+
+    // LOGGING: See what the AI decided.
+    console.log('[api/generate-moodboard] Received categorization from AI:', categorizationResult);
+
+    const responsePayload = {
+      categorization: categorizationResult, // This is already a parsed object
+      tryOnUrlMap
+    };
+
+    // LOGGING: See the final data being sent back to the client.
+    console.log('[api/generate-moodboard] Sending response:', responsePayload);
+
+    return new Response(JSON.stringify(responsePayload), { headers: { 'Content-Type': 'application/json' } });
+
+  } catch (error) {
+    // LOGGING: This is your most important log. It catches all errors in the process.
+    console.error('[api/generate-moodboard] Mood board generation failed:', error);
+    return new Response(JSON.stringify({ error: 'Failed to generate mood board' }), { status: 500 });
+  }
+} 
+```
+
+`open-ai-stylist/src/app/api/get-model-images/route.ts`:
+
+```ts
+import { promises as fs } from 'fs';
+import path from 'path';
+
+const CONFIG_FILE = path.join(process.cwd(), 'data', 'model-images.json');
+
+export async function GET() {
+  try {
+    const data = await fs.readFile(CONFIG_FILE, 'utf-8');
+    const config = JSON.parse(data);
+    return new Response(JSON.stringify(config), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    // If the file doesn't exist, return an empty array
+    console.log('[api/get-model-images] Config file not found, returning empty array');
+    return new Response(JSON.stringify({ images: [] }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+} 
+```
+
+`open-ai-stylist/src/app/api/llama-proxy/route.ts`:
+
+```ts
+import { NextResponse } from 'next/server';
+
+export const maxDuration = 60;
+
+// This function transforms the Llama API's streaming chunk format
+// to the OpenAI-compatible format that the Vercel AI SDK expects.
+function transformLlamaStream(): TransformStream<Uint8Array, Uint8Array> {
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  let buffer = '';
+
+  return new TransformStream({
+    transform(chunk, controller) {
+      buffer += decoder.decode(chunk);
+
+      // Process all complete "data: ..." lines in the buffer
+      while (true) {
+        const newlineIndex = buffer.indexOf('\n\n');
+        if (newlineIndex === -1) {
+          // Not enough data for a full event, wait for more
+          break;
+        }
+
+        const eventLine = buffer.slice(0, newlineIndex);
+        buffer = buffer.slice(newlineIndex + 2); // +2 for '\n\n'
+
+        if (!eventLine.startsWith('data: ')) {
+          continue; // Skip lines that are not data events
+        }
+
+        try {
+          const jsonData = JSON.parse(eventLine.substring(6)); // Remove 'data: '
+
+          // --- This is the core transformation logic ---
+          let transformedData;
+          if (jsonData.completion_message?.stop_reason === 'tool_calls') {
+            // Transform tool call response
+            transformedData = {
+              id: jsonData.id,
+              object: 'chat.completion.chunk',
+              created: Math.floor(Date.now() / 1000),
+              model: jsonData.model,
+              choices: [
+                {
+                  index: 0,
+                  delta: {
+                    role: 'assistant',
+                    content: null,
+                    tool_calls: jsonData.completion_message.tool_calls.map((tc: any, index: number) => ({
+                        index: index,
+                        id: tc.id,
+                        type: 'function',
+                        function: {
+                            name: tc.function.name,
+                            arguments: tc.function.arguments,
+                        }
+                    }))
+                  },
+                  finish_reason: 'tool_calls',
+                },
+              ],
+            };
+          } else if (jsonData.completion_message?.content?.text) {
+             // Transform regular text response
+            transformedData = {
+              id: jsonData.id,
+              object: 'chat.completion.chunk',
+              created: Math.floor(Date.now() / 1000),
+              model: jsonData.model,
+              choices: [
+                {
+                  index: 0,
+                  delta: {
+                    content: jsonData.completion_message.content.text,
+                  },
+                  finish_reason: jsonData.completion_message.stop_reason,
+                },
+              ],
+            };
+          } else {
+            // It might be an empty chunk or the end of the stream, just create a basic structure
+             transformedData = {
+                id: jsonData.id,
+                object: 'chat.completion.chunk',
+                created: Math.floor(Date.now() / 1000),
+                model: jsonData.model,
+                choices: [{ index: 0, delta: {}, finish_reason: jsonData.completion_message?.stop_reason }],
+            };
+          }
+          // --- End of transformation logic ---
+
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(transformedData)}\n\n`));
+        } catch (e) {
+          console.error('Error parsing or transforming Llama chunk:', e);
+          console.error('Problematic chunk:', eventLine);
+        }
+      }
+    },
+    flush(controller) {
+      // If there's any leftover data in the buffer, it's likely an error or incomplete.
+      // You might want to handle it here if necessary.
+      console.log('[llama-proxy] Stream flushed.');
+    }
+  });
+}
+
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+
+    // The Vercel AI SDK now adds `stream: true` to the body automatically
+    // so we can just forward the body as-is.
+    const llamaRequestPayload = {
+        ...body,
+        stream: true, // Ensure streaming is enabled
+    };
+
+    const llamaApiUrl = `${process.env.LLAMA_API_BASE_URL}/chat/completions`;
+
+    const response = await fetch(llamaApiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.LLAMA_API_KEY}`,
+      },
+      body: JSON.stringify(llamaRequestPayload),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Llama API Error:", errorText);
+        return new NextResponse(JSON.stringify({ error: `Llama API failed: ${errorText}` }), { status: response.status });
+    }
+
+    if (!response.body) {
+        return new NextResponse("The response body is empty.", { status: 500 });
+    }
+
+    // Pipe the Llama API's response through our transformer
+    const transformedStream = response.body.pipeThrough(transformLlamaStream());
+    
+    // Return the transformed stream to the Vercel AI SDK
+    return new Response(transformedStream, {
+        headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+        }
+    });
+
+  } catch (error) {
+    console.error('[llama-proxy] CRITICAL ERROR:', error);
+    return new NextResponse(JSON.stringify({ error: 'An internal proxy error occurred' }), { status: 500 });
+  }
+} 
+```
+
+`open-ai-stylist/src/app/api/validate-image/route.ts`:
+
+```ts
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { generateObject } from 'ai';
+import { z } from 'zod';
+import { promises as fs } from 'fs';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
+
+console.log('[api/validate-image] Module loaded.');
+
+export const maxDuration = 30;
+
+// This is the URL of our Next.js app.
+// It's crucial for server-to-server API calls.
+const vercelURL = process.env.VERCEL_URL;
+const appURL = vercelURL ? `https://${vercelURL}` : 'http://localhost:3000';
+
+// Create a client that points to OUR OWN proxy route.
+const llama = createOpenAICompatible({
+  baseURL: `${appURL}/api/llama-proxy`,
+  name: 'llama',
+  // No API key is needed here, because the proxy handles it.
+});
+
+// Zod schema for response validation (we'll do this manually now)
+const validationSchema = z.object({
+  approved: z.boolean(),
+  reason: z.string().describe('A 5-7 word explanation for the decision.'),
+});
+
+// Define paths for reuse
+const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
+const CONFIG_FILE = path.join(process.cwd(), 'data', 'model-images.json');
+
+// Ensure the upload directory exists
+async function ensureUploadsDir() {
+  try {
+    await fs.mkdir(UPLOADS_DIR, { recursive: true });
+  } catch (error) {
+    console.error('[api/validate-image] Failed to create uploads directory:', error);
+  }
+}
+
+async function readConfig() {
+  try {
+    const data = await fs.readFile(CONFIG_FILE, 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+    // If file doesn't exist, return default structure
+    console.log('[api/validate-image] Config file not found, creating default structure');
+    return { images: [] };
+  }
+}
+
+async function writeConfig(data: any) {
+  try {
+    await fs.writeFile(CONFIG_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (error) {
+    console.error('[api/validate-image] Failed to write config file:', error);
+    throw error;
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    await ensureUploadsDir();
+
+    const formData = await req.formData();
+    const imageFile = formData.get('image') as File | null;
+    if (!imageFile) return Response.json({ reason: 'No image file provided.' }, { status: 400 });
+    
+    console.log(`[api/validate-image] Received file: ${imageFile.name}, Size: ${imageFile.size}, Type: ${imageFile.type}`);
+    
+    // 1. Save the image
+    const buffer = Buffer.from(await imageFile.arrayBuffer());
+    const filename = `${uuidv4()}${path.extname(imageFile.name) || '.png'}`;
+    await fs.writeFile(path.join(UPLOADS_DIR, filename), buffer);
+    const publicImageUrl = `/uploads/${filename}`;
+
+    console.log(`[api/validate-image] Using Llama proxy at: ${appURL}/api/llama-proxy`);
+
+    // 2. Validate with Llama using our new unified proxy
+    // Note: Since the current model/proxy setup doesn't fully support image analysis,
+    // we'll do a simplified validation based on file characteristics
+    const prompt = `Analyze an uploaded image file for fashion try-on suitability. 
+File details: name=${imageFile.name}, size=${imageFile.size}KB, type=${imageFile.type}
+Requirements: Image should contain exactly one person, fully visible, wearing simple form-fitting clothing.
+Based on typical image characteristics, make a decision.`;
+    
+    const { object: validationResult } = await generateObject({
+      model: llama('Llama-4-Maverick-17B-128E-Instruct-FP8'),
+      schema: validationSchema,
+      system: `You are an AI judge for fashion try-on images. Analyze the provided information and make a decision about image suitability.`,
+      prompt: prompt,
+    });
+
+    // 3. Update state and respond
+    const finalImageState = {
+      id: Date.now() + Math.random(),
+      url: publicImageUrl,
+      status: validationResult.approved ? 'approved' : 'failed',
+      reason: validationResult.reason,
+    };
+
+    const config = await readConfig();
+    config.images.push(finalImageState);
+    await writeConfig(config);
+
+    console.log(`[api/validate-image] Image processed successfully. Final state:`, finalImageState);
+
+    return Response.json({ finalImageState });
+
+  } catch (error) {
+    console.error('[validate-image] Error:', error);
+    return Response.json({ reason: (error as Error).message }, { status: 500 });
+  }
+} 
+```
+
+`open-ai-stylist/src/app/chat/page.tsx`:
+
+```tsx
+'use client';
+
+import { useChat } from '@ai-sdk/react';
+import { useAppStore, Product } from '../store/useAppStore';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { Message, ToolInvocation } from 'ai';
+
+// A new component to render the products from a tool call
+function ProductDisplay({ products }: { products: Product[] }) {
+  const { selectedProducts, toggleProductSelection } = useAppStore();
+
+  if (!products || products.length === 0) {
+    return <p className="text-gray-500 italic">No products found for this search.</p>;
+  }
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow-inner mt-2">
+      <h3 className="font-bold mb-4 text-gray-700">Here&apos;s what I found:</h3>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {products.map((product: Product) => {
+          const isSelected = selectedProducts.some(p => p.id === product.id);
+          return (
+            <div 
+              key={product.id} 
+              className={`relative cursor-pointer border-4 rounded-lg transition-all hover:shadow-lg ${isSelected ? 'border-indigo-600' : 'border-transparent hover:border-gray-300'}`}
+              onClick={() => {
+                console.log(`[ProductDisplay] Toggling product selection: ${product.name} (${product.id})`);
+                toggleProductSelection(product);
+              }}
+            >
+              <img src={product.imageUrl} alt={product.name} className="w-full h-40 object-cover rounded-md" />
+              {isSelected && <div className="absolute top-2 right-2 bg-indigo-600 text-white rounded-full h-6 w-6 flex items-center justify-center border-2 border-white text-sm">✓</div>}
+              <div className="p-2">
+                <p className="text-sm font-semibold truncate text-gray-800">{product.name}</p>
+                <p className="text-xs text-gray-500">{product.category}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export default function ChatPage() {
+  const router = useRouter();
+  const { 
+    selectedProducts, 
+    clearSelectedProducts, 
+    approvedModelImageUrls,
+    setIsLoading,
+    createOrUpdateMoodboard,
+    moodboards,
+  } = useAppStore();
+
+  // useChat now gets `toolInvocations` to render UI
+  const { messages, input, handleInputChange, handleSubmit } = useChat({
+    api: '/api/chat',
+    // LOGGING: Add onError and onResponse handlers to the useChat hook.
+    onError: (error) => {
+      console.error('[useChat] Hook encountered an error:', error);
+      alert('A connection error occurred. Please try again.');
+      setIsLoading(false);
+    },
+    onResponse: (response) => {
+      console.log('[useChat] Received response from API with status:', response.status);
+    },
+    onFinish: (message) => {
+      // LOGGING: See the final composed message from the AI.
+      console.log('[useChat] Stream finished. Final message:', message);
+      setIsLoading(false);
+    },
+  });
+
+  useEffect(() => {
+    // LOGGING: Track navigation checks.
+    console.log('[ChatPage] Checking navigation requirements. Approved images:', approvedModelImageUrls.length);
+    
+    // This check prevents infinite loops during development hot-reloads
+    if (typeof window !== 'undefined' && approvedModelImageUrls.length === 0) {
+      console.log('[ChatPage] Insufficient approved images, redirecting to onboarding');
+      router.push('/onboarding');
+    }
+  }, [approvedModelImageUrls, router]);
+
+  // LOGGING: Log current state for debugging.
+  console.log('[ChatPage] Current state - Messages:', messages.length, 'Selected products:', selectedProducts.length, 'Existing moodboards:', moodboards.length);
+
+  const handleCreateBoard = async () => {
+    if (selectedProducts.length === 0) return;
+    setIsLoading(true);
+
+    // LOGGING: Log the start of the mood board creation process.
+    console.log('[ChatPage] Initiating mood board creation with products:', selectedProducts.map(p => p.name));
+
+    try {
+      const payload = { 
+        selectedProducts,
+        existingMoodboards: moodboards.map(b => ({title: b.title, description: b.description}))
+      };
+      
+      // LOGGING: See the exact data being sent to the backend.
+      console.log('[ChatPage] Sending to /api/generate-moodboard:', payload);
+
+      const response = await fetch('/api/generate-moodboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      // LOGGING: Check the HTTP response status.
+      console.log(`[ChatPage] Generate moodboard API response status: ${response.status}`);
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error('[ChatPage] Generate moodboard request failed. Response body:', errorBody);
+        throw new Error('Generate moodboard request failed');
+      }
+
+      // LOGGING: See the raw response before parsing.
+      const responseText = await response.text();
+      console.log('[ChatPage] Generate moodboard API raw response:', responseText);
+      
+      const result = JSON.parse(responseText);
+      console.log('[ChatPage] Parsed response from /api/generate-moodboard:', result);
+
+      if (result.error) throw new Error(result.error);
+      
+      // LOGGING: See the data before it's passed to the state store.
+      console.log('[ChatPage] Calling createOrUpdateMoodboard with:', {
+        title: result.categorization.boardTitle,
+        description: result.categorization.boardDescription,
+        action: result.categorization.action,
+        productCount: selectedProducts.length,
+        tryOnUrlMapKeys: Object.keys(result.tryOnUrlMap)
+      });
+      
+      createOrUpdateMoodboard(
+        result.categorization.boardTitle,
+        result.categorization.boardDescription,
+        result.categorization.action,
+        selectedProducts,
+        result.tryOnUrlMap
+      );
+
+      console.log('[ChatPage] Clearing selected products and navigating to gallery');
+      clearSelectedProducts();
+      router.push('/gallery');
+
+    } catch (error) {
+      console.error("[ChatPage] Failed to create mood board", error);
+      console.error("[ChatPage] Error stack:", error instanceof Error ? error.stack : 'No stack trace available');
+      alert("Sorry, something went wrong while creating the mood board.");
+    } finally {
+      console.log('[ChatPage] Mood board creation process completed');
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-screen bg-gray-50">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.map((m: Message) => (
+          <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-lg p-3 rounded-lg shadow-md ${m.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800'}`}>
+              {/* Correct: Render message parts instead of just content */}
+              {m.parts?.map((part, index) => {
+                if (part.type === 'text') {
+                  return <p key={index}>{part.text}</p>;
+                }
+                if (part.type === 'tool-invocation') {
+                  const toolInvocation = part.toolInvocation as ToolInvocation;
+                  if (toolInvocation.toolName === 'searchProducts') {
+                    if (toolInvocation.state === 'call') {
+                      console.log('[ChatPage] Tool invocation in progress:', toolInvocation.toolCallId);
+                      return <div key={toolInvocation.toolCallId} className="text-gray-500 italic">Searching for products...</div>;
+                    }
+                    if (toolInvocation.state === 'result') {
+                      console.log('[ChatPage] Tool invocation completed:', toolInvocation.toolCallId, 'Results:', toolInvocation.result);
+                      return <ProductDisplay key={toolInvocation.toolCallId} products={toolInvocation.result as Product[]} />;
+                    }
+                  }
+                }
+                return null;
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      {selectedProducts.length > 0 && (
+        <div className="p-4 bg-white border-t sticky bottom-16 z-10">
+          <button onClick={handleCreateBoard} className="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-md hover:bg-green-700 transition-colors">
+            Create Mood Board with {selectedProducts.length} items
+          </button>
+        </div>
+      )}
+
+      <form onSubmit={(e) => {
+        console.log('[ChatPage] Form submitted with input:', input);
+        setIsLoading(true);
+        handleSubmit(e);
+      }} className="p-4 bg-white border-t sticky bottom-0 z-10">
+        <input
+          value={input}
+          onChange={handleInputChange}
+          placeholder="Say something like 'show me some streetwear pants'..."
+          className="w-full p-3 border rounded-md focus:ring-2 focus:ring-indigo-500"
+        />
+      </form>
+    </div>
+  );
+} 
+```
+
+`open-ai-stylist/src/app/gallery/page.tsx`:
+
+```tsx
+'use client';
+
+import { useAppStore } from '../store/useAppStore';
+import Link from 'next/link';
+
+export default function GalleryPage() {
+  const { moodboards } = useAppStore();
+
+  if (moodboards.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen text-center">
+        <h1 className="text-3xl font-bold mb-4">Your Gallery is Empty</h1>
+        <p className="text-gray-600 mb-6">Go to the chat to discover items and create your first mood board!</p>
+        <Link href="/chat" className="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700">
+            Start Chatting
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto p-8">
+      <h1 className="text-4xl font-bold mb-8">My Mood Boards</h1>
+      <div className="space-y-12">
+        {moodboards.map((board) => (
+          <div key={board.id}>
+            <h2 className="text-2xl font-bold">{board.title}</h2>
+            <p className="text-gray-500 mb-4">{board.description}</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {board.items.map((item) => (
+                <a key={item.id} href={item.buyLink} target="_blank" rel="noopener noreferrer" className="block group">
+                  <div className="relative aspect-w-3 aspect-h-4 overflow-hidden rounded-lg">
+                    <img src={item.tryOnUrl} alt={`Try-on of ${item.name}`} className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                    <div className="absolute bottom-2 left-2 text-white">
+                      <p className="font-bold text-sm">{item.name}</p>
+                      <span className="text-xs bg-black/50 px-2 py-1 rounded-full">Buy Now</span>
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+} 
+```
+
+`open-ai-stylist/src/app/globals.css`:
+
+```css
+@import "tailwindcss";
+
+```
+
+`open-ai-stylist/src/app/layout.tsx`:
+
+```tsx
+'use client'; // This needs to be a client component to use hooks
+
+import { useEffect } from 'react';
+import { useAppStore } from './store/useAppStore';
+import './globals.css';
+import Link from 'next/link';
+import { Inter } from 'next/font/google';
+
+const inter = Inter({ subsets: ['latin'] });
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const loadProductCatalog = useAppStore((state) => state.loadProductCatalog);
+  const isLoading = useAppStore((state) => state.isLoading);
+
+  useEffect(() => {
+    loadProductCatalog();
+  }, [loadProductCatalog]);
+
+  return (
+    <html lang="en">
+      <body className={inter.className}>
+        {isLoading && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+            <div className="text-white text-xl animate-pulse">Generating Style...</div>
+          </div>
+        )}
+        <nav className="bg-white border-b p-4">
+          <div className="container mx-auto flex justify-between items-center">
+            <Link href="/" className="font-bold text-xl">AI Fashion</Link>
+            <div className="space-x-4">
+              <Link href="/onboarding" className="text-gray-600 hover:text-indigo-600">My Model</Link>
+              <Link href="/chat" className="text-gray-600 hover:text-indigo-600">Chat</Link>
+              <Link href="/gallery" className="text-gray-600 hover:text-indigo-600">Gallery</Link>
+            </div>
+          </div>
+        </nav>
+        <main>{children}</main>
+      </body>
+    </html>
+  );
+}
+
+```
+
+`open-ai-stylist/src/app/onboarding/page.tsx`:
+
+```tsx
+'use client';
+
+import { useAppStore, ModelImage } from '../store/useAppStore';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
+export default function OnboardingPage() {
+  const router = useRouter();
+  const { 
+    modelImages, 
+    loadModelImages, 
+    addPlaceholderImage, 
+    updatePlaceholderImage, 
+    approvedModelImageUrls,
+    deleteModelImage 
+  } = useAppStore();
+  
+  // Add a state to track which image is currently being deleted
+  const [deletingImageId, setDeletingImageId] = useState<number | null>(null);
+
+  // Load existing images when the component mounts
+  useEffect(() => {
+    console.log('[Onboarding] Component mounted, loading existing model images...');
+    loadModelImages();
+  }, [loadModelImages]);
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    console.log(`[Onboarding] ${files.length} file(s) selected for upload`);
+
+    for (const file of Array.from(files)) {
+      console.log('[Onboarding] Processing file:', file.name, 'Size:', file.size, 'Type:', file.type);
+      
+      // Create a temporary local URL for instant preview
+      const placeholderUrl = URL.createObjectURL(file);
+      const placeholderId = addPlaceholderImage(placeholderUrl);
+      console.log('[Onboarding] Created placeholder with ID:', placeholderId);
+      
+      const formData = new FormData();
+      formData.append('image', file);
+
+      try {
+        console.log(`[Onboarding] Uploading file: ${file.name}`);
+        const response = await fetch('/api/validate-image', {
+          method: 'POST',
+          body: formData, // Send FormData, not JSON
+          // DO NOT set 'Content-Type' header, browser does it automatically for FormData
+        });
+        
+        console.log(`[Onboarding] API response status: ${response.status}`);
+        
+        if (!response.ok) {
+          const errorBody = await response.text();
+          console.error('[Onboarding] Validation request failed. Response body:', errorBody);
+          
+          let errorMessage = 'Upload failed';
+          try {
+            const errorResult = JSON.parse(errorBody);
+            errorMessage = errorResult.reason || errorMessage;
+          } catch {
+            // If we can't parse the error, use the default message
+          }
+          throw new Error(errorMessage);
+        }
+
+        const result = await response.json();
+        console.log('[Onboarding] API response:', result);
+
+        // Update the placeholder with the real data from the server
+        updatePlaceholderImage(placeholderId, result.finalImageState);
+        console.log('[Onboarding] Updated placeholder with final state');
+
+        // Clean up the temporary URL to prevent memory leaks
+        URL.revokeObjectURL(placeholderUrl);
+
+      } catch (error) {
+        console.error('[Onboarding] Upload Error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+        
+        // Update the placeholder to show the error
+        updatePlaceholderImage(placeholderId, {
+          url: placeholderUrl,
+          status: 'failed',
+          reason: errorMessage,
+        });
+      }
+    }
+    
+    // Clear the input so the same file can be selected again if needed
+    event.target.value = '';
+  };
+
+  // New handler function for the delete action
+  const handleDeleteImage = async (image: ModelImage) => {
+    // Prevent multiple delete clicks
+    if (deletingImageId) return;
+
+    // Optimistically show a "Deleting..." state
+    setDeletingImageId(image.id);
+
+    try {
+      console.log('[Onboarding] Deleting image:', image.url);
+      const response = await fetch('/api/delete-image', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: image.url }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete image.');
+      }
+
+      console.log('[Onboarding] Image deleted successfully from server');
+      // If the API call is successful, update the client-side state
+      deleteModelImage(image.url);
+
+    } catch (error) {
+      console.error('[Onboarding] Failed to delete image:', error);
+      alert('Could not delete the image. Please try again.');
+    } finally {
+      // Always reset the deleting state
+      setDeletingImageId(null);
+    }
+  };
+  
+  const canContinue = approvedModelImageUrls.length >= 4;
+
+  const getImageBlur = (status: ModelImage['status']) => {
+    switch (status) {
+      case 'validating':
+        return 'blur-sm';
+      case 'approved':
+        return 'blur-none';
+      case 'failed':
+        return 'blur-sm';
+      default:
+        return 'blur-none';
+    }
+  };
+
+  const getOverlayStyle = (status: ModelImage['status']) => {
+    switch (status) {
+      case 'validating':
+        return 'bg-black bg-opacity-60 border-2 border-blue-400';
+      case 'approved':
+        return 'bg-black bg-opacity-40 border-2 border-green-400';
+      case 'failed':
+        return 'bg-black bg-opacity-60 border-2 border-red-400';
+      default:
+        return 'bg-black bg-opacity-50 border-2 border-gray-400';
+    }
+  };
+
+  const renderStatusOverlay = (image: ModelImage) => {
+    // Show a specific overlay when an image is being deleted
+    if (deletingImageId === image.id) {
+      return (
+        <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black bg-opacity-70 border-2 border-red-400">
+          <div className="bg-white bg-opacity-95 rounded-lg px-3 py-2 shadow-lg">
+            <p className="text-red-600 font-semibold animate-pulse text-sm">Deleting...</p>
+          </div>
+        </div>
+      );
+    }
+
+    const baseClasses = "absolute inset-0 flex items-center justify-center rounded-lg transition-all duration-300";
+    const overlayClasses = `${baseClasses} ${getOverlayStyle(image.status)}`;
+    
+    switch (image.status) {
+      case 'validating':
+        return (
+          <div className={overlayClasses}>
+            <div className="bg-white bg-opacity-90 rounded-lg px-3 py-2">
+              <p className="text-blue-600 font-semibold animate-pulse text-sm">Processing...</p>
+            </div>
+          </div>
+        );
+      case 'approved':
+        return (
+          <div className={overlayClasses}>
+            <div className="bg-white bg-opacity-95 rounded-lg px-3 py-2 shadow-lg">
+              <p className="text-green-600 font-bold text-center flex items-center gap-1">
+                <span className="text-lg">✓</span> 
+                <span className="text-sm">Approved</span>
+              </p>
+            </div>
+          </div>
+        );
+      case 'failed':
+        return (
+          <div className={overlayClasses}>
+            <div className="bg-white bg-opacity-95 rounded-lg px-3 py-2 shadow-lg max-w-[90%]">
+              <p className="text-red-600 font-bold text-center text-xs leading-tight">
+                <span className="block text-sm mb-1">✗</span>
+                <span className="block">{image.reason}</span>
+              </p>
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  console.log('[Onboarding] Current state - Total images:', modelImages.length, 'Approved images:', approvedModelImageUrls.length, 'Can continue:', canContinue);
+
+  return (
+    <div className="container mx-auto max-w-4xl p-8">
+      <h1 className="text-4xl font-bold mb-2">Create Your Model</h1>
+      <p className="text-gray-600 mb-6">Upload at least 4 high-quality, full-body photos of yourself wearing simple, form-fitting clothes.</p>
+      
+      <div className="p-6 border-2 border-dashed rounded-lg text-center mb-8">
+        <input 
+          type="file" 
+          id="file-upload" 
+          className="hidden" 
+          onChange={handleFileChange} 
+          accept="image/png, image/jpeg" 
+          multiple 
+        />
+        <label htmlFor="file-upload" className="cursor-pointer bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700">
+          Upload Photo(s)
+        </label>
+        <p className="text-xs text-gray-500 mt-2">PNG or JPG. You can select multiple files.</p>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {modelImages.map((image) => (
+          <div key={image.id} className="relative w-full h-48 md:h-56 group">
+            <img 
+              src={image.url} 
+              alt="User upload" 
+              className={`
+                object-cover rounded-lg w-full h-full 
+                transition-all duration-300
+                ${getImageBlur(image.status)}
+              `}
+            />
+            {renderStatusOverlay(image)}
+            
+            {/* Delete Button */}
+            {/* Show the button only when not processing/deleting and status is final */}
+            {(image.status === 'approved' || image.status === 'failed') && deletingImageId !== image.id && (
+              <button
+                onClick={() => handleDeleteImage(image)}
+                className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full h-8 w-8 flex items-center justify-center text-lg font-bold opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg z-10"
+                aria-label="Delete image"
+                title="Delete image"
+              >
+                ×
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="text-center">
+        <button 
+          onClick={() => {
+            console.log('[Onboarding] Navigating to /chat');
+            router.push('/chat');
+          }}
+          disabled={!canContinue}
+          className="w-full md:w-auto px-12 py-3 rounded-md font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
+        >
+          {canContinue ? 'Continue to Chat' : `Need ${Math.max(0, 4 - approvedModelImageUrls.length)} more approved photos`}
+        </button>
+      </div>
+    </div>
+  );
+} 
+```
+
+`open-ai-stylist/src/app/page.tsx`:
+
+```tsx
+import Link from 'next/link';
+
+export default function HomePage() {
+  return (
+    <div className="flex flex-col items-center justify-center h-screen text-center">
+      <h1 className="text-5xl font-bold mb-4">Welcome to the AI Fashion Studio</h1>
+      <p className="text-lg text-gray-600 mb-8">Discover your next look. Let&apos;s get started.</p>
+      <Link href="/onboarding" className="bg-indigo-600 text-white font-semibold py-3 px-8 rounded-md hover:bg-indigo-700 text-lg">
+          Start Here
+      </Link>
+    </div>
+  );
+}
+
+```
+
+`open-ai-stylist/src/app/store/useAppStore.ts`:
+
+```ts
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { v4 as uuidv4 } from 'uuid';
+
+// Interfaces for our data structures
+export interface Product { id: string; name: string; style_tags: string[]; category: string; imageUrl: string; buyLink: string; }
+export interface ModelImage { id: number; url: string; status: 'validating' | 'approved' | 'failed'; reason?: string; }
+export interface MoodboardItem extends Product { tryOnUrl: string; }
+export interface Moodboard { id: string; title: string; description: string; items: MoodboardItem[]; }
+
+interface AppState {
+  modelImages: ModelImage[];
+  approvedModelImageUrls: string[];
+  productCatalog: Product[];
+  selectedProducts: Product[];
+  moodboards: Moodboard[];
+  isLoading: boolean;
+  setIsLoading: (status: boolean) => void;
+  loadProductCatalog: () => Promise<void>;
+  loadModelImages: () => Promise<void>;
+  addPlaceholderImage: (url: string) => number;
+  updatePlaceholderImage: (id: number, finalState: Omit<ModelImage, 'id'>) => void;
+  deleteModelImage: (imageUrl: string) => void;
+  toggleProductSelection: (product: Product) => void;
+  clearSelectedProducts: () => void;
+  createOrUpdateMoodboard: (title: string, description: string, action: 'CREATE_NEW' | 'ADD_TO_EXISTING', itemsToAdd: Product[], tryOnUrlMap: Record<string, string>) => void;
+}
+
+export const useAppStore = create<AppState>()(
+  persist(
+    (set, get) => ({
+      modelImages: [],
+      approvedModelImageUrls: [],
+      productCatalog: [],
+      selectedProducts: [],
+      moodboards: [],
+      isLoading: false,
+      setIsLoading: (status) => set({ isLoading: status }),
+      loadProductCatalog: async () => {
+        if (get().productCatalog.length > 0) return;
+        const res = await fetch('/data/products.json');
+        const products = await res.json();
+        set({ productCatalog: products });
+      },
+      loadModelImages: async () => {
+        try {
+          console.log('[Store] Loading model images from server...');
+          const res = await fetch('/api/get-model-images');
+          const data = await res.json();
+          console.log('[Store] Loaded model images:', data.images.length);
+          
+          const approvedUrls = data.images
+            .filter((img: ModelImage) => img.status === 'approved')
+            .map((img: ModelImage) => img.url);
+          
+          set({ 
+            modelImages: data.images,
+            approvedModelImageUrls: approvedUrls
+          });
+        } catch (error) {
+          console.error('[Store] Failed to load model images:', error);
+          set({ modelImages: [], approvedModelImageUrls: [] });
+        }
+      },
+      addPlaceholderImage: (url) => {
+        const newId = Date.now() + Math.random();
+        const newImage: ModelImage = { id: newId, url, status: 'validating', reason: 'Uploading...' };
+        set((state) => ({ modelImages: [...state.modelImages, newImage] }));
+        console.log('[Store] Added placeholder image with ID:', newId);
+        return newId;
+      },
+      updatePlaceholderImage: (id, finalState) => {
+        console.log('[Store] Updating placeholder image:', id, 'with final state:', finalState);
+        set((state) => {
+          const updatedModelImages = state.modelImages.map((img) => 
+            img.id === id ? { id, ...finalState } : img
+          );
+          
+          const approvedUrls = updatedModelImages
+            .filter(img => img.status === 'approved')
+            .map(img => img.url);
+          
+          return {
+            modelImages: updatedModelImages,
+            approvedModelImageUrls: approvedUrls
+          };
+        });
+      },
+      // Removes an image from the local state
+      deleteModelImage: (imageUrl) => {
+        console.log('[Store] Deleting image with URL:', imageUrl);
+        set((state) => {
+          const updatedModelImages = state.modelImages.filter(img => img.url !== imageUrl);
+          
+          const approvedUrls = updatedModelImages
+            .filter(img => img.status === 'approved')
+            .map(img => img.url);
+
+          return {
+            modelImages: updatedModelImages,
+            approvedModelImageUrls: approvedUrls,
+          };
+        });
+      },
+      toggleProductSelection: (product) => {
+        set((state) => {
+          const isSelected = state.selectedProducts.some((p) => p.id === product.id);
+          return {
+            selectedProducts: isSelected
+              ? state.selectedProducts.filter((p) => p.id !== product.id)
+              : [...state.selectedProducts, product],
+          };
+        });
+      },
+      clearSelectedProducts: () => set({ selectedProducts: [] }),
+      createOrUpdateMoodboard: (title, description, action, itemsToAdd, tryOnUrlMap) => {
+        const newMoodboardItems = itemsToAdd.map(product => ({
+          ...product,
+          tryOnUrl: tryOnUrlMap[product.id]
+        }));
+
+        set(state => {
+          if (action === 'CREATE_NEW') {
+            const newMoodboard: Moodboard = {
+              id: uuidv4(),
+              title,
+              description,
+              items: newMoodboardItems,
+            };
+            return { moodboards: [...state.moodboards, newMoodboard] };
+          } else { // ADD_TO_EXISTING
+            return {
+              moodboards: state.moodboards.map(board => 
+                board.title === title 
+                  ? { ...board, items: [...board.items, ...newMoodboardItems] } 
+                  : board
+              )
+            };
+          }
+        });
+      }
+    }),
+    {
+      name: 'ai-fashion-storage',
+      partialize: (state) => ({
+          selectedProducts: state.selectedProducts,
+          moodboards: state.moodboards,
+      }),
+    }
+  )
+); 
+```
+
+`open-ai-stylist/tailwind.config.ts`:
+
+```ts
+import type { Config } from 'tailwindcss'
+
+const config: Config = {
+  content: [
+    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+  ],
+  theme: {
+    extend: {
+      colors: {
+        background: "var(--background)",
+        foreground: "var(--foreground)",
+      },
+    },
+  },
+  plugins: [],
+}
+export default config 
+```
+
+`open-ai-stylist/tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
+
+```

@@ -1,0 +1,7 @@
+[
+  { "id": "p1", "name": "Minimalist White Tee", "style_tags": ["korean minimal", "simple", "basic"], "category": "upper-body", "imageUrl": "/products/white-tee.jpg", "buyLink": "https://example.com/product/p1" },
+  { "id": "p2", "name": "Black Street Cargo Pants", "style_tags": ["streetwear", "utility", "gorpcore"], "category": "lower-body", "imageUrl": "/products/cargo-pants.jpg", "buyLink": "https://example.com/product/p2" },
+  { "id": "p3", "name": "Blue Denim Jacket", "style_tags": ["streetwear", "casual", "classic"], "category": "jacket", "imageUrl": "/products/denim-jacket.jpg", "buyLink": "https://example.com/product/p3" },
+  { "id": "p4", "name": "Beige Oversized Hoodie", "style_tags": ["streetwear", "comfort", "minimal"], "category": "upper-body", "imageUrl": "/products/hoodie.jpg", "buyLink": "https://example.com/product/p4" },
+  { "id": "p5", "name": "Slim-Fit Chinos", "style_tags": ["minimal", "business casual"], "category": "lower-body", "imageUrl": "/products/chinos.jpg", "buyLink": "https://example.com/product/p5" }
+] 
