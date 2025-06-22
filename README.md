@@ -1,291 +1,193 @@
-# AI Fashion Stylist 🤖✨
+# StyleList - AI Fashion Stylist
 
-A real-time AI-powered fashion discovery platform that connects users with Amazon's vast clothing catalog through intelligent conversation and creates stunning mood boards with rich product data.
+An AI-powered fashion styling application that provides personalized clothing recommendations using computer vision and natural language processing. Users can upload photos and receive styling advice focused on tops and bottoms, with integrated product search capabilities.
 
-## 🎯 What This Is
+## Features
 
-Transform the way you discover fashion with our AI stylist "Chad" - chat naturally about what you're looking for, get instant access to real Amazon products with live pricing, ratings, and Prime status, then create beautiful mood boards to curate your style.
+### Core Functionality
+- **AI Fashion Stylist**: Conversational interface powered by Llama-4-Maverick-17B model
+- **Image Analysis**: Upload photos to receive personalized styling recommendations
+- **Product Search**: Integration with Amazon product catalog via RapidAPI
+- **Moodboard Creation**: Visual collections of selected clothing items
+- **Multi-Modal Chat**: Support for both text and image inputs in conversations
 
-**🔥 Now Featuring Real-Time Amazon Integration!**
+### Technical Capabilities
+- **Streaming AI Responses**: Real-time conversation with markdown formatting
+- **Image Validation**: AI-powered photo quality assessment
+- **Persistent State**: Cross-session data storage using Zustand
+- **Responsive Design**: Mobile and desktop optimized interface
 
-## ✨ Live Features
+## Technology Stack
 
-### 🛍️ **Real-Time Amazon Search**
-- **Live Product Data** - Real prices, ratings, Prime status, and availability
-- **Intelligent Search** - AI understands "Korean minimal black jacket" or "streetwear oversized hoodie"  
-- **Rich Product Cards** - See prices, star ratings, review counts, and Prime badges
-- **Direct Purchase** - Click through to buy on Amazon instantly
+### Frontend
+- **Next.js 15** with App Router and TypeScript
+- **React 18** with server and client components
+- **Tailwind CSS** for styling and responsive design
+- **Zustand** for state management with persistence
+- **React Markdown** for formatted AI responses
+- **Lucide Icons** for UI iconography
 
-### 🤖 **AI Fashion Stylist "Chad"**
-- **Natural Conversation** - "I need something casual for weekend brunch"
-- **Context Awareness** - Remembers your style preferences throughout the chat
-- **Smart Recommendations** - Gets more specific when you're too vague
-- **Visual Search Results** - See products instantly as you chat
+### Backend & APIs
+- **Vercel AI SDK** for streaming AI interactions
+- **Amazon Product API** via RapidAPI for product data
+- **Custom API routes** for chat, image validation, and moodboard generation
+- **Server actions** for form handling and data processing
 
-### 📸 **Smart Photo Validation**
-- **AI Photo Analysis** - Upload photos for virtual try-on suitability
-- **Instant Feedback** - Get immediate approval or suggestions for better shots
-- **Quality Assessment** - AI ensures photos work well with fashion recommendations
+### AI Integration
+- **Llama-4-Maverick-17B-128E-Instruct-FP8** model for fashion expertise
+- **Vision capabilities** for image analysis and styling recommendations
+- **Tool calling** for product search integration
+- **Custom system prompts** optimized for fashion styling
 
-### 🎨 **Intelligent Mood Boards**
-- **AI Categorization** - Automatically organizes products into themed collections
-- **Beautiful Layouts** - Pinterest-style grids with hover effects
-- **Purchase Integration** - Direct links to buy any item
-- **Collection Management** - Build multiple mood boards for different styles
+## Getting Started
 
-### 💾 **Persistent Experience**
-- **Cross-Session Memory** - Your selections and conversations are saved
-- **Multi-Chat Support** - Manage multiple style conversations
-- **Real-Time Sync** - Seamlessly switch between devices
+### Prerequisites
+- Node.js 18.0 or later
+- npm or yarn package manager
+- RapidAPI account for Amazon product access
 
-## 🛠️ Tech Stack
+### Installation
 
-### **Frontend Excellence**
-- **Next.js 15** - React framework with App Router and TypeScript
-- **Tailwind CSS** - Beautiful, responsive design system
-- **Zustand** - Lightweight, persistent state management
-- **Lucide Icons** - Modern icon system
-- **Aceternity UI** - Premium component library
-
-### **AI & Real-Time APIs**
-- **Vercel AI SDK** - Streaming AI conversations with tool usage
-- **Amazon Product API** - Live product data via RapidAPI
-- **Llama 3.1** - Advanced language model for fashion expertise
-- **Axios** - Reliable API communication
-
-### **Modern Architecture**
-- **Serverless Functions** - Fast, scalable API routes
-- **Real-Time Streaming** - Instant AI responses
-- **Type Safety** - Full TypeScript coverage
-- **Error Boundaries** - Graceful failure handling
-
-## 🚀 Quick Start
-
-### **Prerequisites**
-- Node.js 18+
-- Amazon Product API access (included in setup)
-
-### **5-Minute Setup**
-
-1. **Clone & Install**
+1. Clone the repository:
 ```bash
-git clone https://github.com/your-username/open-ai-stylist.git
+git clone <repository-url>
 cd open-ai-stylist
+```
+
+2. Install dependencies:
+```bash
 npm install
 ```
 
-2. **Configure APIs**
-Create `.env.local`:
+3. Configure environment variables:
+Create a `.env.local` file with the following:
 ```env
-# Real-Time Amazon Data API (RapidAPI)
-RAPIDAPI_KEY=01111002ebmsh49690c753d958adp179715jsnc34e9fcbbfac
+RAPIDAPI_KEY=your_rapidapi_key
 RAPIDAPI_HOST=real-time-amazon-data.p.rapidapi.com
 ```
 
-3. **Launch**
+4. Start the development server:
 ```bash
 npm run dev
 ```
 
-4. **Start Shopping**
-Visit [http://localhost:3000](http://localhost:3000) and start chatting with Chad!
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-## 🌟 User Journey
+## Usage
 
-### **1. Upload Your Photo** 📷
-- Take or upload a clear photo of yourself
-- AI validates it's suitable for fashion recommendations
-- Get instant feedback and suggestions
+### Initial Setup
+1. Navigate to the onboarding page to upload approved model photos
+2. Photos are validated using AI for styling suitability
+3. Approved photos are stored for use in styling conversations
 
-### **2. Chat with Chad** 💬
-- "Find me a Korean minimal black jacket under $100"
-- "I need streetwear for a casual date"
-- "Show me work outfits that are comfortable"
+### Styling Conversations
+1. Start a new chat session
+2. Upload a photo or describe your styling needs
+3. Receive personalized recommendations for tops and bottoms
+4. Browse suggested products with real-time Amazon pricing
+5. Select items to create moodboards
 
-### **3. Discover Real Products** 🛍️
-- See live Amazon products with real prices
-- Check star ratings and review counts
-- Spot Prime delivery options
-- Select items you love
+### Moodboard Management
+1. Select products during conversations
+2. Create themed collections with AI-generated titles
+3. View products in responsive grid layouts
+4. Access direct purchase links for selected items
 
-### **4. Create Mood Boards** 🎨
-- AI automatically categorizes your selections
-- Beautiful grid layouts with hover effects
-- Direct purchase links for each item
-- Build multiple themed collections
+## API Endpoints
 
-### **5. Shop & Style** ✨
-- Click through to Amazon for instant purchase
-- Share mood boards with friends
-- Build your personal style library
+### `/api/chat`
+Main chat interface supporting both text and image inputs
+- **Method**: POST
+- **Input**: Message array with text/image content
+- **Output**: Streaming AI responses with tool calls
+- **Features**: Context awareness, product search integration
 
-## 🎨 What Makes This Special
+### `/api/validate-image`
+Image quality validation for styling purposes
+- **Method**: POST  
+- **Input**: Base64 encoded image data
+- **Output**: Validation result with feedback
+- **AI Model**: Vision-enabled analysis
 
-### **🧠 Intelligent Conversations**
-Unlike simple search, Chad understands context:
-- "Korean minimal" + "winter jacket" = finds the perfect aesthetic
-- Remembers you mentioned "work appropriate" earlier in the chat
-- Asks clarifying questions when you're too vague
+### `/api/generate-moodboard`
+Moodboard creation and product categorization
+- **Method**: POST
+- **Input**: Selected products and user preferences
+- **Output**: Categorized collections with metadata
 
-### **🛍️ Real Shopping Data**
-Every product shows:
-- ✅ Current Amazon price
-- ⭐ Star rating and review count  
-- 📦 Prime delivery status
-- 🔗 Direct purchase link
-
-### **🎨 Beautiful Mood Boards**
-- Pinterest-style responsive grids
-- Hover animations and smooth transitions
-- AI-generated titles and descriptions
-- Seamless shopping integration
-
-### **⚡ Performance & UX**
-- Instant loading with smart caching
-- Real-time AI streaming
-- Responsive on all devices
-- Elegant error handling
-
-## 🏗️ Technical Architecture
+## Project Structure
 
 ```
-🎯 Frontend Layer (Next.js + TypeScript)
-├── 🏠 Pages (App Router with dynamic routes)
-├── 🎨 Components (Reusable UI with Tailwind)
-├── 💾 State (Zustand with persistence)
-└── 🔧 Utils (Type-safe helpers)
-
-🔌 API Layer (Serverless Functions)
-├── 💬 /api/chat (AI stylist with real-time tools)
-├── 📷 /api/validate-image (AI photo analysis)
-├── 🎨 /api/generate-moodboard (Smart categorization)
-└── 🛍️ Amazon Product Service (Live data integration)
-
-🤖 AI Integration (Vercel AI SDK)
-├── 🧠 Conversational AI (Context-aware fashion advice)
-├── 🔧 Tool Usage (Real-time product search)
-├── 📊 Streaming (Instant response rendering)
-└── 💡 Smart Prompting (Fashion domain expertise)
-
-🛍️ Amazon Integration (RapidAPI)
-├── 🔍 Product Search (Live catalog access)
-├── 💰 Pricing Data (Real-time prices)
-├── ⭐ Reviews & Ratings (Social proof)
-└── 📦 Prime Status (Delivery information)
+src/
+├── app/                    # Next.js App Router pages
+│   ├── api/               # API route handlers
+│   ├── chat/              # Chat interface pages
+│   ├── gallery/           # Moodboard gallery
+│   ├── onboarding/        # Photo upload flow
+│   └── store/             # Zustand state management
+├── components/            # Reusable React components
+│   ├── aceternity/        # Third-party UI components
+│   └── ui/                # Custom UI components
+└── lib/                   # Utility functions and services
 ```
 
-## 📊 API Endpoints
+## Configuration
 
-### **POST /api/chat**
-Real-time AI fashion stylist with tool usage
-- **Input**: Conversation messages
-- **Output**: Streaming AI responses with live Amazon products
-- **Features**: Context memory, tool integration, error handling
+### Environment Variables
+- `RAPIDAPI_KEY`: Authentication key for Amazon product API
+- `RAPIDAPI_HOST`: API host endpoint for product search
 
-### **POST /api/validate-image** 
-AI-powered photo validation for fashion recommendations
-- **Input**: Base64 encoded image
-- **Output**: Validation status with feedback
-- **AI**: Llama 3.1 Vision analysis
+### Model Configuration
+The application uses Llama-4-Maverick-17B-128E-Instruct-FP8 with custom system prompts optimized for:
+- Fashion styling expertise
+- Focus on tops and bottoms (excluding accessories)
+- Professional styling advice
+- Product recommendation workflow
 
-### **POST /api/generate-moodboard**
-Intelligent mood board creation and categorization
-- **Input**: Selected products, user preferences
-- **Output**: Categorized collections with AI-generated metadata
-- **Features**: Smart grouping, title generation, duplicate detection
+## Development
 
-## 🎨 Design System
+### Code Quality
+- TypeScript for type safety
+- ESLint configuration for code standards
+- Component-based architecture
+- Error boundary implementation
 
-### **Visual Identity**
-- **Primary**: Indigo gradients with modern depth
-- **Secondary**: Warm grays with perfect contrast
-- **Accents**: Amazon orange, Prime blue, rating gold
-- **Typography**: Inter font family with optical sizing
+### State Management
+- Zustand store with persistence
+- Modular state slices for different features
+- Cross-component state sharing
+- Local storage integration
 
-### **Component Philosophy**
-- **Cards**: Elevated surfaces with subtle shadows
-- **Interactions**: Smooth micro-animations
-- **Layouts**: Responsive grids that adapt beautifully
-- **Loading**: Skeleton states and smooth transitions
+### Styling System
+- Tailwind CSS utility classes
+- Custom component styling
+- Responsive design patterns
+- Dark/light theme support
 
-### **Mood Board Aesthetics**
-- **Backgrounds**: Subtle gradients and textures
-- **Grids**: Masonry-style layouts with smart spacing
-- **Images**: Optimized loading with elegant hover states
-- **Purchase**: Clear call-to-action integration
+## Deployment
 
-## 🚀 Deployment Options
+### Vercel (Recommended)
+The application is optimized for Vercel deployment:
 
-### **Vercel (Recommended)**
 ```bash
-npm i -g vercel
 vercel --prod
 ```
-- Automatic SSL and global CDN
-- Environment variable management
-- Zero-configuration deployment
 
-### **Environment Variables**
-```env
-# Production Configuration
-RAPIDAPI_KEY=your_production_key
-RAPIDAPI_HOST=real-time-amazon-data.p.rapidapi.com
-NEXT_PUBLIC_APP_URL=https://your-domain.com
-```
+### Environment Setup
+Ensure all environment variables are configured in your deployment platform:
+- `RAPIDAPI_KEY`
+- `RAPIDAPI_HOST`
 
-## 📈 Performance & Scale
+## License
 
-### **Optimization Features**
-- ⚡ Serverless API routes for instant scaling
-- 🖼️ Optimized image loading with Next.js Image
-- 💾 Smart caching for Amazon product data
-- 📱 Responsive design for all screen sizes
-- 🧠 AI response streaming for perceived speed
+MIT License - see LICENSE file for details
 
-### **Production Ready**
-- 🛡️ Error boundaries and graceful fallbacks
-- 📊 Built-in analytics hooks
-- 🔒 Secure API key management
-- 🌍 Global CDN deployment
-- 📈 Auto-scaling serverless infrastructure
+## Contributing
 
-## 🤝 Contributing
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-### **Development Setup**
-```bash
-git clone <repo>
-cd open-ai-stylist
-npm install
-cp .env.example .env.local
-npm run dev
-```
-
-### **Code Quality**
-- TypeScript strict mode
-- ESLint + Prettier configuration
-- Component-driven development
-- Comprehensive error handling
-
-## 🔗 Links & Resources
-
-- **[Live Demo](https://your-demo-url.com)** - Try it now!
-- **[API Documentation](./docs/api.md)** - Technical details
-- **[Design System](./docs/design.md)** - UI guidelines
-- **[Deployment Guide](./docs/deployment.md)** - Go live steps
-
-## 📄 License
-
-MIT License - Build something amazing! 
-
-## 🙏 Special Thanks
-
-- **Amazon** - For the incredible product catalog API
-- **Vercel** - For the amazing AI SDK and hosting
-- **Next.js Team** - For the best React framework
-- **Fashion Community** - For inspiration and feedback
-
----
-
-**Built with ❤️ for fashion lovers who want AI-powered discovery and real shopping integration.**
-
-🎯 **Ready to revolutionize how you discover fashion? [Get started now!](http://localhost:3000)**
+Please ensure code follows the existing style and includes appropriate documentation.
