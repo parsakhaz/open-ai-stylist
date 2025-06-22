@@ -1,12 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
+import { Message } from 'ai';
 
 // Interfaces for our data structures
 export interface Product { id: string; name: string; style_tags: string[]; category: string; imageUrl: string; buyLink: string; }
 export interface ModelImage { id: number; url: string; status: 'validating' | 'approved' | 'failed'; reason?: string; }
 export interface MoodboardItem extends Product { tryOnUrl: string; }
-export interface Moodboard { id: string; title: string; description: string; items: MoodboardItem[]; }
+export interface Moodboard { id: string; title: string; description: string; items: (Product & { tryOnUrl?: string })[]; }
 
 // Interface for a chat session summary
 export interface ChatSession {
@@ -25,6 +26,7 @@ interface AppState {
   
   // Chat session management
   chatSessions: ChatSession[];
+  chatMessages: Record<string, Message[]>;
   activeChatId: string | null;
   
   setIsLoading: (status: boolean) => void;
@@ -39,6 +41,7 @@ interface AppState {
   
   // New chat management actions
   addChatSession: (id: string) => void;
+  setChatMessages: (id: string, messages: Message[]) => void;
   setChatTitle: (id: string, title: string) => void;
   setActiveChatId: (id: string | null) => void;
   deleteChatSession: (id: string) => void;
@@ -56,6 +59,7 @@ export const useAppStore = create<AppState>()(
       
       // Initialize chat sessions
       chatSessions: [],
+      chatMessages: {},
       activeChatId: null,
       
       setIsLoading: (status) => set({ isLoading: status }),
@@ -172,6 +176,15 @@ export const useAppStore = create<AppState>()(
         }));
       },
 
+      setChatMessages: (id, messages) => {
+        set(state => ({
+          chatMessages: {
+            ...state.chatMessages,
+            [id]: messages
+          }
+        }));
+      },
+
       setChatTitle: (id, title) => {
         set(state => ({
           chatSessions: state.chatSessions.map(session => 
@@ -187,8 +200,13 @@ export const useAppStore = create<AppState>()(
           const newChatSessions = state.chatSessions.filter(session => session.id !== id);
           const newActiveChatId = state.activeChatId === id ? null : state.activeChatId;
           
+          // Also delete messages associated with the chat
+          const newChatMessages = { ...state.chatMessages };
+          delete newChatMessages[id];
+          
           return {
             chatSessions: newChatSessions,
+            chatMessages: newChatMessages,
             activeChatId: newActiveChatId,
           };
         });
@@ -202,6 +220,7 @@ export const useAppStore = create<AppState>()(
           selectedProducts: state.selectedProducts,
           moodboards: state.moodboards,
           chatSessions: state.chatSessions, // Persist the chat list
+          chatMessages: state.chatMessages, // Persist the chat messages
           activeChatId: state.activeChatId,
       }),
     }

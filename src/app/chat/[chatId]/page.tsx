@@ -12,11 +12,13 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Copy, RefreshCw, Bot, User, Loader2, Send } from 'lucide-react';
 
 // Enhanced ProductDisplay component using Shadcn UI
-function ProductDisplay({ products }: { products: Product[] }) {
+function ProductDisplay({ products, searchQuery }: { products: Product[]; searchQuery?: string }) {
   const { selectedProducts, toggleProductSelection } = useAppStore();
 
   if (!products || products.length === 0) {
-    return <p className="text-gray-500 italic">No products found for this search.</p>;
+    return <p className="text-gray-500 italic">
+      No products found for {searchQuery ? `"${searchQuery}"` : 'this search'}.
+    </p>;
   }
 
   return (
@@ -63,6 +65,8 @@ export default function ChatPage() {
     moodboards,
     chatSessions,
     addChatSession,
+    chatMessages,
+    setChatMessages,
   } = useAppStore();
   
   const { 
@@ -77,15 +81,21 @@ export default function ChatPage() {
   } = useChat({
     api: '/api/chat',
     id: chatId,
-    onFinish: (message) => {
-      // Chat title is now set immediately when user sends first message
-      // No need to set title here anymore
-    },
+    initialMessages: chatMessages[chatId] || [],
     onError: (error) => {
       console.error('[useChat] Hook encountered an error:', error);
       setIsLoading(false);
     },
   });
+
+  // Save messages to store when they change
+  useEffect(() => {
+    // We only save if there are messages, to avoid overwriting a persisted
+    // chat with an empty array right after a redirect/reload.
+    if (messages.length > 0) {
+      setChatMessages(chatId, messages);
+    }
+  }, [messages, chatId, setChatMessages]);
 
   // Check if current chat still exists (only redirect if chat was explicitly deleted)
   useEffect(() => {
@@ -225,18 +235,20 @@ export default function ChatPage() {
             <div key={m.id} className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : ''}`}>
               {m.role === 'assistant' && <Bot className="h-8 w-8 text-gray-600 flex-shrink-0" />}
               <div className={`max-w-xl p-3 rounded-lg shadow-sm ${m.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-800'}`}>
-                {m.parts?.map((part, index) => {
-                  if (part.type === 'text') {
-                    return <p key={`${m.id}-${index}`}>{part.text}</p>;
-                  }
-                  if (part.type === 'tool-invocation') {
-                    if (part.toolInvocation.toolName === 'searchProducts') {
-                       if (part.toolInvocation.state === 'call') {
-                          return <div key={part.toolInvocation.toolCallId} className="flex items-center gap-2 text-gray-500 italic"><Loader2 className="h-4 w-4 animate-spin"/>Searching for products...</div>;
-                       }
-                       if (part.toolInvocation.state === 'result') {
-                          return <ProductDisplay key={part.toolInvocation.toolCallId} products={part.toolInvocation.result as Product[]} />;
-                       }
+                {m.content && <p className="mb-2">{m.content}</p>}
+                
+                {m.toolInvocations?.map(toolInvocation => {
+                  if (toolInvocation.toolName === 'searchProducts') {
+                    // The Vercel AI SDK renders the tool call spinner automatically.
+                    // We only need to handle the 'result' state.
+                    if (toolInvocation.state === 'result') {
+                      return (
+                        <ProductDisplay
+                          key={toolInvocation.toolCallId}
+                          products={(toolInvocation as any).result as Product[]}
+                          searchQuery={(toolInvocation as any).args?.query}
+                        />
+                      );
                     }
                   }
                   return null;

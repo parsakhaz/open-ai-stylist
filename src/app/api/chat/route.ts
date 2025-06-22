@@ -1,8 +1,19 @@
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { streamText, tool } from 'ai';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { z } from 'zod';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { NextResponse } from 'next/server';
+
+// Local type definition for products
+interface Product {
+  id: string;
+  name: string;
+  category: string;
+  imageUrl: string;
+  style_tags: string[];
+  buyLink: string;
+}
 
 console.log('[api/chat] Module loaded.');
 
@@ -20,15 +31,6 @@ const llama = createOpenAICompatible({
   name: 'llama',
   // No API key is needed here, because the proxy handles it.
 });
-
-interface Product {
-  id: string;
-  name: string;
-  imageUrl: string;
-  category: string;
-  buyLink: string;
-  style_tags: string[];
-}
 
 // This can be defined outside the function to avoid re-reading the file on every call
 // For a real app, this would come from a database. For now, let's cache it.
@@ -55,60 +57,76 @@ export async function POST(req: Request) {
     const result = streamText({
       model: llama('Llama-4-Maverick-17B-128E-Instruct-FP8'),
       
-      // --- FIX: Make the instructions more explicit ---
-      system: `You are "Chad", a friendly and enthusiastic AI fashion stylist. Your goal is to help the user discover new clothing items. 
-      - You MUST use the 'searchProducts' tool to find items whenever the user expresses interest in any type of clothing. Do not invent products.
-      - After the 'searchProducts' tool returns the results, you MUST present them to the user. 
-      - CRITICALLY: You must also include a friendly, conversational text response introducing the products, for example: 'Awesome, check out these streetwear options I found for you!' or 'You got it! Here are some great items that match your search.'. 
-      - DO NOT end the turn silently after a tool call. Always provide a text message.`,
+      // --- DEFINITIVE FIX: Add a specific instruction for handling empty search results. ---
+      system: `You are "Chad", an AI fashion stylist. You operate in a strict two-step process.
+      
+      **Step 1: TOOL CALL**
+      - When a user asks for clothing, your response for that turn MUST BE ONLY the \`searchProducts\` tool call. Do not include any other text.
+      
+      **Step 2: PRESENT RESULTS**
+      - After you receive results from the tool call, you MUST present them. Your response MUST start with a friendly, conversational message (e.g., "You got it!") before showing the product results.
+      - **CRITICAL FAILURE INSTRUCTION:** If the \`searchProducts\` tool returns an empty array ([]), you MUST inform the user that you couldn't find anything matching their request and ask them to try a different search. DO NOT try to search again on your own.`,
       
       messages,
       tools: {
         searchProducts: tool({
-          description: 'Searches the product catalog for clothing items based on a user query, such as style, color, or item type (e.g., "pants", "streetwear fits", "korean minimal shirt").',
+          description: 'Searches the product catalog for clothing items based on a user query, such as style, color, or item type (e.g., "pants", "streetwear fits", "korean minimal shirt", "sneakers", "boots"). Use the itemType parameter for better accuracy.',
           parameters: z.object({
             query: z.string().describe('The user\'s search query. Be descriptive. E.g., "edgy black pants for streetwear".'),
-            itemType: z.string().optional().describe('Specific item category like "pants", "upper-body", "dress", "jacket".'),
+            itemType: z.string().optional().describe('Specific item category like "pants", "upper-body", "dress", "jacket", "footwear".'),
           }),
           execute: async ({ query, itemType }) => {
             // LOGGING: Log when the tool starts executing and with what parameters.
-            console.log(`[tool:searchProducts] Executing with query: "${query}", itemType: "${itemType}"`);
-
-            const products = await getProducts();
+            console.log(`[tool:searchProducts] Executing with query: "${query}", itemType: "${itemType || 'none'}"`);
             
-            // LOGGING: Confirm the product catalog was loaded.
+            const res = await fetch(`${appURL}/data/products.json`);
+            const products = await res.json();
             console.log(`[tool:searchProducts] Loaded ${products.length} products from catalog.`);
             
             const lowerCaseQuery = query.toLowerCase();
             
-            let filteredProducts = products.filter(p => {
+            let potentialMatches = products;
+
+            // 1. If itemType is given, narrow down the list first. This is a strong signal.
+            if (itemType) {
+              potentialMatches = potentialMatches.filter((p: any) => p.category.toLowerCase() === itemType.toLowerCase());
+              console.log(`[tool:searchProducts] Filtered to ${potentialMatches.length} products by itemType: "${itemType}"`);
+            }
+            
+            // 2. From the potential matches, find items that match the query text.
+            let filteredProducts = potentialMatches.filter((p: any) => {
+              // FIX: Correctly check if product attributes include the query, not the other way around.
               const nameMatch = p.name.toLowerCase().includes(lowerCaseQuery);
-              const tagMatch = p.style_tags.some((tag:string) => lowerCaseQuery.includes(tag.toLowerCase()));
-              const queryInName = p.name.toLowerCase().split(' ').some((word: string) => lowerCaseQuery.includes(word));
-              return nameMatch || tagMatch || queryInName;
+              const categoryMatch = p.category.toLowerCase().includes(lowerCaseQuery);
+              const tagMatch = p.style_tags.some((tag:string) => tag.toLowerCase().includes(lowerCaseQuery));
+              
+              return nameMatch || categoryMatch || tagMatch;
             });
 
-            // LOGGING: See how many products matched the query before other filters.
-            console.log(`[tool:searchProducts] Found ${filteredProducts.length} products after initial filter.`);
+            console.log(`[tool:searchProducts] Found ${filteredProducts.length} products after text search.`);
 
-            if (itemType) {
-              filteredProducts = filteredProducts.filter(p => p.category.toLowerCase() === itemType.toLowerCase());
-              // LOGGING: See how many products matched after category filter.
-              console.log(`[tool:searchProducts] Found ${filteredProducts.length} products after category filter.`);
+            // 3. Fallback: If the combined filter yields no results, and we had an itemType,
+            // retry the search against ALL products to be less strict.
+            if (filteredProducts.length === 0 && itemType) {
+                console.log('[tool:searchProducts] No results in category, retrying query against all products.');
+                filteredProducts = products.filter((p: any) => {
+                    const nameMatch = p.name.toLowerCase().includes(lowerCaseQuery);
+                    const tagMatch = p.style_tags.some((tag:string) => tag.toLowerCase().includes(lowerCaseQuery));
+                    return nameMatch || tagMatch;
+                });
             }
             
             // Return a structured result for the client to render
-            const finalResults = filteredProducts.slice(0, 8).map(p => ({
-                id: p.id,
-                name: p.name,
-                imageUrl: p.imageUrl,
-                category: p.category,
-                buyLink: p.buyLink, // Ensure you return all needed fields
-                style_tags: p.style_tags,
+            const finalResults = filteredProducts.slice(0, 8).map((p: any) => ({
+              id: p.id,
+              name: p.name,
+              category: p.category,
+              imageUrl: p.imageUrl,
+              style_tags: p.style_tags,
+              buyLink: p.buyLink,
             }));
 
-            // LOGGING: See exactly what the tool is returning to the AI model.
-            console.log('[tool:searchProducts] Returning results to model:', finalResults);
+            console.log(`[tool:searchProducts] Returning ${finalResults.length} products to the user.`);
             return finalResults;
           },
         }),
@@ -116,9 +134,9 @@ export async function POST(req: Request) {
     });
 
     return result.toDataStreamResponse();
+    
   } catch (error) {
-    // LOGGING: Add a top-level try-catch to catch errors before streaming starts (e.g., req.json() fails).
     console.error('[api/chat] CRITICAL ERROR:', error);
-    return new Response('An internal error occurred', { status: 500 });
+    return new Response(JSON.stringify({ error: 'An internal server error occurred' }), { status: 500 });
   }
 } 
