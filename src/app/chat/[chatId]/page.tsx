@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Copy, RefreshCw, Bot, User, Loader2, Send, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
+import confetti from 'canvas-confetti';
 
 // This is our new, enhanced ProductDisplay component
 function ProductDisplay({ products, searchQuery }: { products: Product[]; searchQuery?: string }) {
@@ -209,6 +210,37 @@ export default function ChatPage() {
     }
   };
 
+  const triggerCelebrationConfetti = () => {
+    // Celebration confetti burst
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#10b981', '#059669', '#ffffff', '#f59e0b', '#ef4444']
+    });
+    
+    // Follow up with a smaller burst
+    setTimeout(() => {
+      confetti({
+        particleCount: 50,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0, y: 0.7 },
+        colors: ['#8b5cf6', '#a855f7', '#ffffff']
+      });
+    }, 200);
+    
+    setTimeout(() => {
+      confetti({
+        particleCount: 50,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1, y: 0.7 },
+        colors: ['#06b6d4', '#0891b2', '#ffffff']
+      });
+    }, 400);
+  };
+
   const pollForTryOns = (boardId: string) => {
     let pollCount = 0;
     const maxPolls = 120; // 2 minutes max (120 * 1 second)
@@ -234,6 +266,7 @@ export default function ChatPage() {
           clearInterval(interval);
           updateMoodboardWithTryOns(boardId, data.tryOnUrlMap, data.categorization);
           setMoodboardCompleted(boardId);
+          triggerCelebrationConfetti();
           toast.success('✨ Moodboard upgraded with virtual try-ons!');
         } else if (data.status === 'processing' && pollCount >= maxPolls) {
           // Still processing but we've hit the timeout
