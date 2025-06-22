@@ -23,6 +23,7 @@ export default function OnboardingPage() {
   } = useAppStore();
   
   const [deletingImageId, setDeletingImageId] = useState<number | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -134,71 +135,82 @@ export default function OnboardingPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-pink-25 to-purple-50 animate-gradient bg-[length:400%_400%]"></div>
         
         {/* Left Sidebar */}
-        <div className="w-64 bg-white/95 backdrop-blur-sm border-r border-gray-200 flex flex-col relative z-10">
+        <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-white/95 backdrop-blur-sm border-r border-gray-200 flex flex-col relative z-10 transition-all duration-300`}>
           {/* Header */}
           <div className="p-4 border-b border-gray-200">
-            <div className="flex items-center gap-2">
-              <img src="/assets/Logo.png" alt="Stylist" />
-              {/* <span className="font-semibold text-gray-900">Stylist</span> */}
+            <div className="flex items-center justify-between">
+              {!isCollapsed && <img src="/assets/Logobigger.webp" alt="Stylist" />}
+              <img 
+                src="/assets/Collapse.svg" 
+                alt="Collapse" 
+                className="w-5 h-5 cursor-pointer hover:opacity-70 transition-opacity" 
+                onClick={() => setIsCollapsed(!isCollapsed)}
+              />
             </div>
           </div>
 
           {/* Add Moodboard Button */}
-          <div className="p-4">
-            <Link href="/chat">
-              <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg py-2 text-sm font-medium">
-                <img src="/assets/Add.svg" alt="Add" className="w-4 h-4 mr-2 filter brightness-0 invert" />
-                Add Moodboard
-              </Button>
-            </Link>
-          </div>
+          {!isCollapsed && (
+            <div className="p-4">
+              <Link href="/chat">
+                <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg py-2 text-sm font-medium">
+                  <img src="/assets/Add.svg" alt="Add" className="w-4 h-4 mr-2 filter brightness-0 invert" />
+                  Add Moodboard
+                </Button>
+              </Link>
+            </div>
+          )}
 
           {/* Saved Section */}
-          <div className="px-4 pb-2">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <img src="/assets/Saved.svg" alt="Saved" className="w-4 h-4" />
-              <span>Saved ({moodboards.length})</span>
+          {!isCollapsed && (
+            <div className="px-4 pb-2">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <img src="/assets/Saved.svg" alt="Saved" className="w-4 h-4" />
+                <span>Saved ({moodboards.length})</span>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Chat History */}
-          <div className="px-4 py-2 flex-1 overflow-y-auto">
-            <h3 className="text-xs font-medium text-gray-500 mb-3">Recent Chats</h3>
-            <div className="space-y-1">
-              {chatSessions.length === 0 ? (
-                <div className="text-center text-gray-400 text-xs py-4">
-                  <MessageSquare className="h-6 w-6 mx-auto mb-2 opacity-50" />
-                  <p>No chats yet</p>
-                </div>
-              ) : (
-                chatSessions
-                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                  .slice(0, 6) // Show only recent 6 chats
-                  .map(session => (
-                    <div key={session.id} className="relative group">
-                      <Link href={`/chat/${session.id}`}>
-                        <div className="text-sm text-gray-700 py-2 px-2 rounded hover:bg-gray-100 transition-colors cursor-pointer truncate">
-                          {session.title}
-                        </div>
-                      </Link>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-5 w-5 opacity-0 group-hover:opacity-100 hover:bg-red-100 hover:text-red-600 transition-all"
-                        onClick={(e) => handleDeleteChat(e, session.id)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))
+          {!isCollapsed && (
+            <div className="px-4 py-2 flex-1 overflow-y-auto">
+              <h3 className="text-xs font-medium text-gray-500 mb-3">Recent Chats</h3>
+              <div className="space-y-1">
+                {chatSessions.length === 0 ? (
+                  <div className="text-center text-gray-400 text-xs py-4">
+                    <MessageSquare className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                    <p>No chats yet</p>
+                  </div>
+                ) : (
+                  chatSessions
+                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                    .slice(0, 6) // Show only recent 6 chats
+                    .map(session => (
+                      <div key={session.id} className="relative group">
+                        <Link href={`/chat/${session.id}`}>
+                          <div className="text-sm text-gray-700 py-2 px-2 rounded hover:bg-gray-100 transition-colors cursor-pointer truncate">
+                            {session.title}
+                          </div>
+                        </Link>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-1 top-1/2 -translate-y-1/2 h-5 w-5 opacity-0 group-hover:opacity-100 hover:bg-red-100 hover:text-red-600 transition-all"
+                          onClick={(e) => handleDeleteChat(e, session.id)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))
+                )}
+              </div>
+              {chatSessions.length > 6 && (
+                <Link href="/chat" className="block text-xs text-blue-600 hover:text-blue-800 mt-2 px-2">
+                  View all chats →
+                </Link>
               )}
             </div>
-            {chatSessions.length > 6 && (
-              <Link href="/chat" className="block text-xs text-blue-600 hover:text-blue-800 mt-2 px-2">
-                View all chats →
-              </Link>
-            )}
-          </div>
+          )}
         </div>
 
         {/* Main Content Area */}
@@ -207,12 +219,14 @@ export default function OnboardingPage() {
             {/* Main Card */}
             <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-8 shadow-sm border-2 border-gray-200">
               {/* Step Indicator */}
-              <div className="text-center mb-2">
-                <span className="text-sm font-medium bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Step 1 out of 3</span>
+              <div className="text-left mb-2">
+                <span className="text-sm font-medium text-black">
+                  <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Step 1</span> out of 3
+                </span>
               </div>
               
               {/* Title */}
-              <h1 className="text-2xl font-bold text-gray-900 text-center mb-8">
+              <h1 className="text-2xl font-bold text-gray-900 text-left mb-8">
                 Upload your Photos!
               </h1>
 
@@ -314,7 +328,7 @@ export default function OnboardingPage() {
               </div>
 
               {/* Photo Counter */}
-              <div className="text-center mb-6">
+              <div className="text-left mb-6">
                 <span className="text-sm font-bold text-gray-600">
                   {approvedModelImageUrls.length}/4 photos uploaded
                 </span>
