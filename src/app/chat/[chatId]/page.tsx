@@ -97,6 +97,8 @@ export default function ChatPage() {
     addChatSession,
     chatMessages,
     setChatMessages,
+    setMoodboardProcessing,
+    setMoodboardCompleted,
   } = useAppStore();
   
   const { 
@@ -217,8 +219,10 @@ export default function ChatPage() {
       try {
         const res = await fetch(`/api/notify-try-on-complete?boardId=${boardId}`);
         if (!res.ok) {
+          // Just continue polling - don't show completion badge for API errors
           if (pollCount >= maxPolls) {
             clearInterval(interval);
+            setMoodboardCompleted(boardId); // Only show badge on true timeout
             toast.error('Try-on generation timed out. Your moodboard is ready with original images.');
           }
           return;
@@ -226,19 +230,27 @@ export default function ChatPage() {
 
         const data = await res.json();
         if (data.status === 'completed') {
+          // Actually completed successfully
           clearInterval(interval);
           updateMoodboardWithTryOns(boardId, data.tryOnUrlMap, data.categorization);
+          setMoodboardCompleted(boardId);
           toast.success('✨ Moodboard upgraded with virtual try-ons!');
-        } else if (pollCount >= maxPolls) {
+        } else if (data.status === 'processing' && pollCount >= maxPolls) {
+          // Still processing but we've hit the timeout
           clearInterval(interval);
+          setMoodboardCompleted(boardId);
           toast.error('Try-on generation timed out. Your moodboard is ready with original images.');
         }
+        // If status is 'processing' and we haven't timed out, just continue polling
       } catch (error) {
         console.error('Polling failed:', error);
+        // Only show completion badge if we've truly reached the timeout
         if (pollCount >= maxPolls) {
           clearInterval(interval);
+          setMoodboardCompleted(boardId);
           toast.error('Try-on generation failed. Your moodboard is ready with original images.');
         }
+        // Otherwise just continue polling - network errors happen
       }
     }, 1000);
   };
@@ -256,6 +268,9 @@ export default function ChatPage() {
         selectedProducts,
         initialTryOnMap
     );
+    
+    // Set processing state to show visual indicators
+    setMoodboardProcessing(boardId);
     
     clearSelectedProducts();
     toast.success('✅ Moodboard created! Generating try-ons...');
@@ -281,6 +296,7 @@ export default function ChatPage() {
 
     } catch (error) {
       console.error("Failed to start mood board generation", error);
+      setMoodboardCompleted(boardId); // Show completion badge on failure
       toast.error("Sorry, something went wrong starting the try-on process.");
     }
   };

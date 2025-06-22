@@ -19,7 +19,10 @@ export default function OnboardingPage() {
     deleteModelImage,
     chatSessions,
     deleteChatSession,
-    moodboards
+    moodboards,
+    processingMoodboards,
+    completedMoodboards,
+    clearCompletedStatus
   } = useAppStore();
   
   const [deletingImageId, setDeletingImageId] = useState<number | null>(null);
@@ -208,9 +211,46 @@ export default function OnboardingPage() {
           {/* Saved Section */}
           {!isCollapsed && (
             <div className="px-4 pb-2">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <img src="/assets/Saved.svg" alt="Saved" className="w-4 h-4" />
-                <span>Saved ({moodboards.length})</span>
+              <div 
+                className="flex items-center gap-2 text-sm relative cursor-pointer"
+                onClick={() => {
+                  // Clear completion status when user interacts with this section
+                  if (completedMoodboards.size > 0) {
+                    Array.from(completedMoodboards).forEach(boardId => {
+                      clearCompletedStatus(boardId);
+                    });
+                  }
+                }}
+              >
+                <img 
+                  src="/assets/Saved.svg" 
+                  alt="Saved" 
+                  className={`w-4 h-4 ${
+                    processingMoodboards.size > 0 ? 'animate-pulse' : ''
+                  }`} 
+                />
+                <span className={`${
+                  processingMoodboards.size > 0 
+                    ? 'text-blue-600 animate-pulse font-medium' 
+                    : 'text-gray-600'
+                }`}>
+                  Saved ({moodboards.length})
+                </span>
+                
+                {/* Completion Badge */}
+                {completedMoodboards.size > 0 && (
+                  <div 
+                    className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-bounce cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Clear all completed statuses when clicked
+                      Array.from(completedMoodboards).forEach(boardId => {
+                        clearCompletedStatus(boardId);
+                      });
+                    }}
+                    title={`${completedMoodboards.size} moodboard${completedMoodboards.size > 1 ? 's' : ''} completed processing - click to dismiss`}
+                  />
+                )}
               </div>
             </div>
           )}

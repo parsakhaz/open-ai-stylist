@@ -15,7 +15,13 @@ import {
 import { useState } from 'react';
 
 export function GallerySidebar() {
-  const { moodboards, chatSessions } = useAppStore();
+  const { 
+    moodboards, 
+    chatSessions, 
+    processingMoodboards, 
+    completedMoodboards,
+    clearCompletedStatus 
+  } = useAppStore();
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -74,9 +80,44 @@ export function GallerySidebar() {
       {/* Saved Moodboards Section */}
       {!isCollapsed && (
         <div className="px-4 pb-2">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Palette className="w-4 h-4" />
-            <span>Saved ({moodboards.length})</span>
+          <div 
+            className="flex items-center gap-2 text-sm relative cursor-pointer" 
+            onClick={() => {
+              // Clear completion status when user interacts with this section
+              if (completedMoodboards.size > 0) {
+                Array.from(completedMoodboards).forEach(boardId => {
+                  clearCompletedStatus(boardId);
+                });
+              }
+            }}
+          >
+            <Palette className={`w-4 h-4 ${
+              processingMoodboards.size > 0 
+                ? 'text-blue-500 animate-pulse' 
+                : 'text-gray-600'
+            }`} />
+            <span className={`${
+              processingMoodboards.size > 0 
+                ? 'text-blue-600 animate-pulse font-medium' 
+                : 'text-gray-600'
+            }`}>
+              Saved ({moodboards.length})
+            </span>
+            
+            {/* Completion Badge */}
+            {completedMoodboards.size > 0 && (
+              <div 
+                className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-bounce cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Clear all completed statuses when clicked
+                  Array.from(completedMoodboards).forEach(boardId => {
+                    clearCompletedStatus(boardId);
+                  });
+                }}
+                title={`${completedMoodboards.size} moodboard${completedMoodboards.size > 1 ? 's' : ''} completed processing - click to dismiss`}
+              />
+            )}
           </div>
         </div>
       )}

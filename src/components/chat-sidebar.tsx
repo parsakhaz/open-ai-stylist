@@ -9,7 +9,14 @@ import { PlusCircle, MessageSquare, X, Palette, ChevronLeft, ChevronRight } from
 import { useState } from 'react';
 
 export function ChatSidebar() {
-  const { chatSessions, deleteChatSession, moodboards } = useAppStore();
+  const { 
+    chatSessions, 
+    deleteChatSession, 
+    moodboards,
+    processingMoodboards,
+    completedMoodboards,
+    clearCompletedStatus
+  } = useAppStore();
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -79,9 +86,46 @@ export function ChatSidebar() {
       {/* Saved Moodboards Section */}
       {!isCollapsed && (
         <div className="px-4 pb-2">
-          <Link href="/gallery" className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors">
-            <Palette className="w-4 h-4" />
-            <span>Moodboards ({moodboards.length})</span>
+          <Link 
+            href="/gallery" 
+            className="flex items-center gap-2 text-sm hover:text-gray-800 transition-colors relative"
+            onClick={() => {
+              // Clear completion status when navigating to gallery
+              if (completedMoodboards.size > 0) {
+                Array.from(completedMoodboards).forEach(boardId => {
+                  clearCompletedStatus(boardId);
+                });
+              }
+            }}
+          >
+            <Palette className={`w-4 h-4 ${
+              processingMoodboards.size > 0 
+                ? 'text-blue-500 animate-pulse' 
+                : 'text-gray-600'
+            }`} />
+            <span className={`${
+              processingMoodboards.size > 0 
+                ? 'text-blue-600 animate-pulse font-medium' 
+                : 'text-gray-600'
+            }`}>
+              Moodboards ({moodboards.length})
+            </span>
+            
+            {/* Completion Badge */}
+            {completedMoodboards.size > 0 && (
+              <div 
+                className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-bounce cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  // Clear all completed statuses when clicked
+                  Array.from(completedMoodboards).forEach(boardId => {
+                    clearCompletedStatus(boardId);
+                  });
+                }}
+                title={`${completedMoodboards.size} moodboard${completedMoodboards.size > 1 ? 's' : ''} completed processing - click to dismiss`}
+              />
+            )}
           </Link>
         </div>
       )}

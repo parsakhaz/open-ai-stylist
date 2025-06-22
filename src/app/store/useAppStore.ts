@@ -34,6 +34,10 @@ interface AppState {
   moodboards: Moodboard[];
   isLoading: boolean;
   
+  // Processing state for background tasks
+  processingMoodboards: Set<string>; // Board IDs currently being processed
+  completedMoodboards: Set<string>; // Board IDs that just completed processing
+  
   // Chat session management
   chatSessions: ChatSession[];
   chatMessages: Record<string, Message[]>;
@@ -52,6 +56,11 @@ interface AppState {
   deleteAllMoodboards: () => void;
   removeMoodboardItem: (boardId: string, itemId: string) => void;
   
+  // Processing state management
+  setMoodboardProcessing: (boardId: string) => void;
+  setMoodboardCompleted: (boardId: string) => void;
+  clearCompletedStatus: (boardId: string) => void;
+  
   // New chat management actions
   addChatSession: (id: string) => void;
   setChatMessages: (id: string, messages: Message[]) => void;
@@ -68,6 +77,10 @@ export const useAppStore = create<AppState>()(
       selectedProducts: [],
       moodboards: [],
       isLoading: false,
+      
+      // Initialize processing state
+      processingMoodboards: new Set<string>(),
+      completedMoodboards: new Set<string>(),
       
       // Initialize chat sessions
       chatSessions: [],
@@ -270,6 +283,27 @@ export const useAppStore = create<AppState>()(
           };
         });
       },
+      
+      // Processing state management
+      setMoodboardProcessing: (boardId) => {
+        set(state => ({
+          processingMoodboards: new Set([...state.processingMoodboards, boardId]),
+          completedMoodboards: new Set([...state.completedMoodboards].filter(id => id !== boardId))
+        }));
+      },
+      
+      setMoodboardCompleted: (boardId) => {
+        set(state => ({
+          processingMoodboards: new Set([...state.processingMoodboards].filter(id => id !== boardId)),
+          completedMoodboards: new Set([...state.completedMoodboards, boardId])
+        }));
+      },
+      
+      clearCompletedStatus: (boardId) => {
+        set(state => ({
+          completedMoodboards: new Set([...state.completedMoodboards].filter(id => id !== boardId))
+        }));
+      },
     }),
     {
       name: 'ai-fashion-storage',
@@ -281,6 +315,7 @@ export const useAppStore = create<AppState>()(
           chatSessions: state.chatSessions, // Persist the chat list
           chatMessages: state.chatMessages, // Persist the chat messages
           activeChatId: state.activeChatId,
+          // Don't persist processing states - they should reset on reload
       }),
     }
   )
