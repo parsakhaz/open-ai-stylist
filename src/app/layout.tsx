@@ -1,6 +1,6 @@
 'use client'; // This needs to be a client component to use hooks
 
-import { useEffect } from 'react';
+// useEffect import removed since we no longer need it
 import { useAppStore } from './store/useAppStore';
 import './globals.css';
 import { Inter } from 'next/font/google';
@@ -14,12 +14,10 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const loadProductCatalog = useAppStore((state) => state.loadProductCatalog);
+  // We no longer need to load the product catalog here.
   const isLoading = useAppStore((state) => state.isLoading);
 
-  useEffect(() => {
-    loadProductCatalog();
-  }, [loadProductCatalog]);
+  // The useEffect for loadProductCatalog has been removed.
 
   const navItems = [
     { name: "Home", link: "/", icon: <Home className="h-4 w-4 text-neutral-500 dark:text-white" /> },

@@ -1,19 +1,8 @@
 import { streamText, tool } from 'ai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { z } from 'zod';
-import { promises as fs } from 'fs';
-import path from 'path';
 import { NextResponse } from 'next/server';
-
-// Local type definition for products
-interface Product {
-  id: string;
-  name: string;
-  category: string;
-  imageUrl: string;
-  style_tags: string[];
-  buyLink: string;
-}
+import { searchAndTransformProducts, RichProduct } from '@/lib/amazon.service';
 
 console.log('[api/chat] Module loaded.');
 
@@ -32,16 +21,7 @@ const llama = createOpenAICompatible({
   // No API key is needed here, because the proxy handles it.
 });
 
-// This can be defined outside the function to avoid re-reading the file on every call
-// For a real app, this would come from a database. For now, let's cache it.
-let productCatalog: Product[] | null = null;
-async function getProducts(): Promise<Product[]> {
-  if (productCatalog) return productCatalog;
-  const jsonDirectory = path.join(process.cwd(), 'public', 'data');
-  const fileContents = await fs.readFile(path.join(jsonDirectory, 'products.json'), 'utf8');
-  productCatalog = JSON.parse(fileContents);
-  return productCatalog || [];
-}
+// We no longer need local product catalog since we're using real Amazon API
 
 export async function POST(req: Request) {
   try {
@@ -90,58 +70,14 @@ export async function POST(req: Request) {
             query: z.string().describe('The user\'s search query. Be descriptive and incorporate conversation context. E.g., if user mentioned "korean minimal" earlier and now wants "black jacket", search for "korean minimal black jacket".'),
             itemType: z.string().optional().describe('Specific item category like "pants", "upper-body", "dress", "jacket", "footwear".'),
           }),
-          execute: async ({ query, itemType }) => {
-            // LOGGING: Log when the tool starts executing and with what parameters.
-            console.log(`[tool:searchProducts] Executing with query: "${query}", itemType: "${itemType || 'none'}"`);
+          // The new execute block that calls our Amazon service
+          execute: async ({ query }): Promise<RichProduct[]> => {
+            console.log(`[tool:searchProducts] Executing with REAL Amazon API for query: "${query}"`);
             
-            const res = await fetch(`${appURL}/data/products.json`);
-            const products = await res.json();
-            console.log(`[tool:searchProducts] Loaded ${products.length} products from catalog.`);
+            // Call our new service to get real, rich products from Amazon
+            const finalResults = await searchAndTransformProducts(query);
             
-            const lowerCaseQuery = query.toLowerCase();
-            
-            let potentialMatches = products;
-
-            // 1. If itemType is given, narrow down the list first. This is a strong signal.
-            if (itemType) {
-              potentialMatches = potentialMatches.filter((p: any) => p.category.toLowerCase() === itemType.toLowerCase());
-              console.log(`[tool:searchProducts] Filtered to ${potentialMatches.length} products by itemType: "${itemType}"`);
-            }
-            
-            // 2. From the potential matches, find items that match the query text.
-            let filteredProducts = potentialMatches.filter((p: any) => {
-              // FIX: Correctly check if product attributes include the query, not the other way around.
-              const nameMatch = p.name.toLowerCase().includes(lowerCaseQuery);
-              const categoryMatch = p.category.toLowerCase().includes(lowerCaseQuery);
-              const tagMatch = p.style_tags.some((tag:string) => tag.toLowerCase().includes(lowerCaseQuery));
-              
-              return nameMatch || categoryMatch || tagMatch;
-            });
-
-            console.log(`[tool:searchProducts] Found ${filteredProducts.length} products after text search.`);
-
-            // 3. Fallback: If the combined filter yields no results, and we had an itemType,
-            // retry the search against ALL products to be less strict.
-            if (filteredProducts.length === 0 && itemType) {
-                console.log('[tool:searchProducts] No results in category, retrying query against all products.');
-                filteredProducts = products.filter((p: any) => {
-                    const nameMatch = p.name.toLowerCase().includes(lowerCaseQuery);
-                    const tagMatch = p.style_tags.some((tag:string) => tag.toLowerCase().includes(lowerCaseQuery));
-                    return nameMatch || tagMatch;
-                });
-            }
-            
-            // Return a structured result for the client to render
-            const finalResults = filteredProducts.slice(0, 8).map((p: any) => ({
-              id: p.id,
-              name: p.name,
-              category: p.category,
-              imageUrl: p.imageUrl,
-              style_tags: p.style_tags,
-              buyLink: p.buyLink,
-            }));
-
-            console.log(`[tool:searchProducts] Returning ${finalResults.length} products to the user.`);
+            console.log(`[tool:searchProducts] Returning ${finalResults.length} rich products to the user.`);
             return finalResults;
           },
         }),

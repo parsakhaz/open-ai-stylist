@@ -1,6 +1,8 @@
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { generateObject } from 'ai';
 import { z } from 'zod';
+// IMPORT THE CORRECT PRODUCT TYPE FROM OUR CENTRAL STORE
+import { Product } from '@/app/store/useAppStore';
 
 console.log('[api/generate-moodboard] Module loaded.');
 
@@ -25,14 +27,7 @@ const categorizationSchema = z.object({
     boardDescription: z.string().describe('A one-sentence description for the mood board.'),
 });
 
-interface Product {
-  id: string;
-  name: string;
-  imageUrl: string;
-  category: string;
-  buyLink: string;
-  style_tags: string[];
-}
+// The old, local Product interface has been deleted. We now use the imported one.
 
 interface MoodboardSummary {
   title: string;

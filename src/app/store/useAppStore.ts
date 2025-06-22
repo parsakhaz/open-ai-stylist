@@ -4,7 +4,18 @@ import { v4 as uuidv4 } from 'uuid';
 import { Message } from 'ai';
 
 // Interfaces for our data structures
-export interface Product { id: string; name: string; style_tags: string[]; category: string; imageUrl: string; buyLink: string; }
+// The new, richer Product definition for our entire application.
+export interface Product {
+  id: string;
+  name: string;
+  imageUrl: string;
+  buyLink: string;
+  price: string | null;
+  originalPrice: string | null;
+  rating: number | null;
+  ratingCount: number | null;
+  isPrime: boolean;
+}
 export interface ModelImage { id: number; url: string; status: 'validating' | 'approved' | 'failed'; reason?: string; }
 export interface MoodboardItem extends Product { tryOnUrl: string; }
 export interface Moodboard { id: string; title: string; description: string; items: (Product & { tryOnUrl?: string })[]; }
@@ -19,7 +30,6 @@ export interface ChatSession {
 interface AppState {
   modelImages: ModelImage[];
   approvedModelImageUrls: string[];
-  productCatalog: Product[];
   selectedProducts: Product[];
   moodboards: Moodboard[];
   isLoading: boolean;
@@ -30,7 +40,6 @@ interface AppState {
   activeChatId: string | null;
   
   setIsLoading: (status: boolean) => void;
-  loadProductCatalog: () => Promise<void>;
   loadModelImages: () => Promise<void>;
   addPlaceholderImage: (url: string) => number;
   updatePlaceholderImage: (id: number, finalState: Omit<ModelImage, 'id'>) => void;
@@ -52,7 +61,6 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       modelImages: [],
       approvedModelImageUrls: [],
-      productCatalog: [],
       selectedProducts: [],
       moodboards: [],
       isLoading: false,
@@ -63,12 +71,6 @@ export const useAppStore = create<AppState>()(
       activeChatId: null,
       
       setIsLoading: (status) => set({ isLoading: status }),
-      loadProductCatalog: async () => {
-        if (get().productCatalog.length > 0) return;
-        const res = await fetch('/data/products.json');
-        const products = await res.json();
-        set({ productCatalog: products });
-      },
       loadModelImages: async () => {
         try {
           console.log('[Store] Loading model images from server...');

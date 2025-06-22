@@ -9,38 +9,66 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Copy, RefreshCw, Bot, User, Loader2, Send } from 'lucide-react';
+import { Copy, RefreshCw, Bot, User, Loader2, Send, Star } from 'lucide-react';
 
-// Enhanced ProductDisplay component using Shadcn UI
+// This is our new, enhanced ProductDisplay component
 function ProductDisplay({ products, searchQuery }: { products: Product[]; searchQuery?: string }) {
   const { selectedProducts, toggleProductSelection } = useAppStore();
 
   if (!products || products.length === 0) {
-    return <p className="text-gray-500 italic">
-      No products found for {searchQuery ? `"${searchQuery}"` : 'this search'}.
+    return <p className="text-gray-500 italic mt-4">
+      I couldn't find anything for "{searchQuery}". Try another search?
     </p>;
   }
 
   return (
-    <Card className="mt-4 bg-gray-50">
+    <Card className="mt-4 bg-gray-50/50">
       <CardHeader>
-        <CardTitle className="text-lg">Here's what I found</CardTitle>
+        <CardTitle className="text-lg">Here's what I found for "{searchQuery}"</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {products.map((product) => {
             const isSelected = selectedProducts.some(p => p.id === product.id);
             return (
               <div 
                 key={product.id} 
-                className={`relative cursor-pointer border-4 rounded-lg transition-all hover:shadow-lg ${isSelected ? 'border-indigo-600' : 'border-transparent hover:border-gray-300'}`}
+                className={`relative cursor-pointer group border-4 rounded-lg transition-all bg-white shadow-sm hover:shadow-xl ${isSelected ? 'border-indigo-500' : 'border-transparent'}`}
                 onClick={() => toggleProductSelection(product)}
               >
-                <img src={product.imageUrl} alt={product.name} className="w-full h-40 object-cover rounded-md" />
-                {isSelected && <div className="absolute top-2 right-2 bg-indigo-600 text-white rounded-full h-6 w-6 flex items-center justify-center border-2 border-white text-sm">✓</div>}
-                <div className="p-2">
-                  <p className="text-sm font-semibold truncate text-gray-800">{product.name}</p>
-                  <p className="text-xs text-gray-500">{product.category}</p>
+                {/* Product Image */}
+                <div className="aspect-[3/4] overflow-hidden">
+                  <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                </div>
+
+                {/* Checkmark for selected items */}
+                {isSelected && (
+                  <div className="absolute top-2 right-2 bg-indigo-600 text-white rounded-full h-6 w-6 flex items-center justify-center border-2 border-white text-sm z-10">✓</div>
+                )}
+                
+                {/* Product Info Overlay */}
+                <div className="p-2.5 flex flex-col">
+                  <p className="text-sm font-medium text-gray-800 line-clamp-2 leading-tight">{product.name}</p>
+                  
+                  {/* Price */}
+                  <div className="flex items-baseline gap-2 mt-1">
+                    {product.price && <p className="text-base font-semibold text-gray-900">{product.price}</p>}
+                    {product.originalPrice && <p className="text-xs text-gray-500 line-through">{product.originalPrice}</p>}
+                  </div>
+
+                  {/* Rating */}
+                  {product.rating && product.ratingCount && (
+                    <div className="flex items-center gap-1 mt-1 text-xs text-gray-600">
+                      <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                      <span>{product.rating}</span>
+                      <span className="text-gray-400">({product.ratingCount})</span>
+                    </div>
+                  )}
+
+                  {/* Prime Badge */}
+                  {product.isPrime && (
+                    <span className="mt-2 text-xs font-bold text-sky-600">prime</span>
+                  )}
                 </div>
               </div>
             );
@@ -239,8 +267,27 @@ export default function ChatPage() {
                 
                 {m.toolInvocations?.map(toolInvocation => {
                   if (toolInvocation.toolName === 'searchProducts') {
-                    // The Vercel AI SDK renders the tool call spinner automatically.
-                    // We only need to handle the 'result' state.
+                    // Show loading spinner while the tool call is executing
+                    if (toolInvocation.state === 'call') {
+                      const searchQuery = (toolInvocation as any).args?.query;
+                      return (
+                        <Card key={toolInvocation.toolCallId} className="mt-4 bg-gray-50/50">
+                          <CardHeader>
+                            <CardTitle className="text-lg">Searching for "{searchQuery}"...</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="flex items-center justify-center py-8">
+                              <div className="flex items-center gap-3 text-gray-600">
+                                <Loader2 className="h-6 w-6 animate-spin" />
+                                <span className="text-sm">Finding the perfect pieces for you...</span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    }
+                    
+                    // Show results when the tool call is complete
                     if (toolInvocation.state === 'result') {
                       return (
                         <ProductDisplay
