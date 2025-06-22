@@ -37,12 +37,40 @@ export default function RootLayout({
         {isLoading && <FashionLoading />}
         
         <Toaster 
-          position="bottom-right"
+          position="bottom-center"
           toastOptions={{
             duration: 5000,
             style: {
-              background: '#333',
-              color: '#fff',
+              background: '#1f2937',
+              color: '#ffffff',
+              borderRadius: '12px',
+              padding: '16px 24px',
+              fontSize: '14px',
+              fontWeight: '500',
+              minWidth: '320px',
+              maxWidth: '500px',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+            },
+            success: {
+              style: {
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                color: '#ffffff',
+              },
+              iconTheme: {
+                primary: '#ffffff',
+                secondary: '#10b981',
+              },
+            },
+            error: {
+              style: {
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                color: '#ffffff',
+              },
+              iconTheme: {
+                primary: '#ffffff',
+                secondary: '#ef4444',
+              },
             },
           }}
         />
