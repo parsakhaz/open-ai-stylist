@@ -5,6 +5,7 @@ import { useAppStore } from './store/useAppStore';
 import './globals.css';
 import { Inter } from 'next/font/google';
 import { FloatingNav } from '@/components/aceternity/floating-nav';
+import { FashionLoading } from '@/components/fashion-loading';
 import { Home, Bot, Image, GalleryHorizontal } from 'lucide-react';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -29,11 +30,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        {isLoading && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-            <div className="text-white text-xl animate-pulse">Generating Style...</div>
-          </div>
-        )}
+        {isLoading && <FashionLoading />}
         
         <FloatingNav navItems={navItems} />
         
