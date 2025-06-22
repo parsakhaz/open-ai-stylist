@@ -19,7 +19,7 @@ export default function HomePage() {
   const features = [
     {
       icon: <MessageCircle className="w-6 h-6" />,
-      title: "Chat with Chad",
+      title: "Chat with your StyleList",
       description: "Your AI fashion stylist understands natural language"
     },
     {
@@ -53,7 +53,7 @@ export default function HomePage() {
             duration: 0.8,
             ease: "easeInOut",
           }}
-          className="flex-1 flex flex-col gap-8 items-center justify-center px-4 pt-20"
+          className="flex-1 flex flex-col gap-8 items-center justify-center px-4"
         >
           {/* Main Heading */}
           <div className="text-center space-y-6">
@@ -107,7 +107,7 @@ export default function HomePage() {
                 className="border-gray-300 text-gray-700 hover:bg-gray-50 px-8 py-4 text-lg h-auto rounded-lg transition-all duration-300"
               >
                 <MessageCircle className="w-5 h-5 mr-2" />
-                Chat with Chad
+                Chat with StyleList
               </Button>
             </Link>
           </motion.div>

@@ -8,6 +8,7 @@ import {
 } from "framer-motion";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export const FloatingNav = ({
   navItems,
@@ -21,10 +22,20 @@ export const FloatingNav = ({
   className?: string;
 }) => {
   const { scrollYProgress } = useScroll();
+  const pathname = usePathname();
+  
+  // Check if we're on a chat page
+  const isChatPage = pathname?.startsWith('/chat');
 
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(isChatPage || false);
 
   useMotionValueEvent(scrollYProgress, "change", (current) => {
+    // If we're on a chat page, always keep it visible
+    if (isChatPage) {
+      setVisible(true);
+      return;
+    }
+    
     // Check if current is not undefined and is a number
     if (typeof current === "number") {
       let direction = current! - scrollYProgress.getPrevious()!;
@@ -45,8 +56,8 @@ export const FloatingNav = ({
     <AnimatePresence mode="wait">
       <motion.div
         initial={{
-          opacity: 1,
-          y: -100,
+          opacity: isChatPage ? 1 : 1,
+          y: isChatPage ? 0 : -100,
         }}
         animate={{
           y: visible ? 0 : -100,

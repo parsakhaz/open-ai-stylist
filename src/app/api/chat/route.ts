@@ -38,7 +38,7 @@ export async function POST(req: Request) {
       model: llama('Llama-4-Maverick-17B-128E-Instruct-FP8'),
       
       // --- IMPROVED SYSTEM PROMPT: Gather details before tool call ---
-      system: `You are "Chad", an AI fashion stylist. You operate in a three-step process.
+      system: `You are "StyleList", an AI fashion stylist. You operate in a three-step process.
       
       **Step 1: ASSESS QUERY SPECIFICITY**
       - When a user asks for clothing, first assess if their request has enough detail for a good search.
