@@ -56,6 +56,65 @@ function generateCanvasPosition(index: number, totalItems: number) {
   return positions[index];
 }
 
+// Generate realistic tape edge patterns using SVG clip-path
+function generateTapeClipPath(isHorizontal: boolean, seed: number, index: number) {
+  const random = (i: number) => ((seed * (i + index + 1) * 9301 + 49297) % 233280) / 233280;
+  
+  if (isHorizontal) {
+    // Generate jagged edges for LEFT and RIGHT ends of horizontal tape (short sides)
+    const points = [];
+    const steps = 3; // Fewer points for short edges - just 3-4 jagged points
+    
+    // Left edge (jagged - where tape was cut/torn)
+    for (let i = 0; i <= steps; i++) {
+      const y = (i / steps) * 100;
+      const x = random(i * 2) * 15 + 8; // 8-23% from left, smaller jagged area
+      points.push(`${x}% ${y}%`);
+    }
+    
+    // Bottom edge (straight)
+    points.push('92% 100%');
+    
+    // Right edge (jagged - where tape was cut/torn)
+    for (let i = steps; i >= 0; i--) {
+      const y = (i / steps) * 100;
+      const x = 100 - (random(i * 2 + 100) * 15 + 8); // 77-92% from left
+      points.push(`${x}% ${y}%`);
+    }
+    
+    // Top edge (straight)
+    points.push('23% 0%');
+    
+    return `polygon(${points.join(', ')})`;
+  } else {
+    // Generate jagged edges for TOP and BOTTOM ends of vertical tape (short sides)  
+    const points = [];
+    const steps = 3; // Fewer points for short edges
+    
+    // Top edge (jagged - where tape was cut/torn)
+    for (let i = 0; i <= steps; i++) {
+      const x = (i / steps) * 100;
+      const y = random(i * 2) * 15 + 8; // 8-23% from top, smaller jagged area
+      points.push(`${x}% ${y}%`);
+    }
+    
+    // Right edge (straight)
+    points.push('100% 77%');
+    
+    // Bottom edge (jagged - where tape was cut/torn)
+    for (let i = steps; i >= 0; i--) {
+      const x = (i / steps) * 100;
+      const y = 100 - (random(i * 2 + 100) * 15 + 8); // 77-92% from top
+      points.push(`${x}% ${y}%`);
+    }
+    
+    // Left edge (straight)
+    points.push('0% 23%');
+    
+    return `polygon(${points.join(', ')})`;
+  }
+}
+
 // Generate random tape placement for each item
 function generateTapeElements(itemId: string) {
   // Use item ID to ensure consistent tape placement per item
@@ -79,46 +138,61 @@ function generateTapeElements(itemId: string) {
     const basePosition = 10 + (segmentIndex * segmentSize) + (random(i + 2) * segmentSize * 0.6);
     const position = Math.min(90, Math.max(10, basePosition)); // keep within 10-90%
     const rotation = (random(i + 3) - 0.5) * 30; // -15 to 15 degrees
-    const length = (random(i + 4) * 30 + 25) * 1.3; // 30% longer: 32.5-71.5px length
+    const length = (random(i + 4) * 30 + 25) * 1.3 * 1.4; // 40% longer on top of existing 30%: 45.5-100px length
     
-    let style = {};
-    let className = 'absolute bg-gray-600 border border-gray-700 shadow-md opacity-30 z-10';
+    let style = {
+      backgroundColor: '#CABEA4',
+      border: '1px solid #B8AB94',
+    };
+    let className = 'absolute shadow-md opacity-70 z-10';
+    
+    // Determine if tape is horizontal or vertical
+    const isHorizontal = side === 0 || side === 2; // top or bottom
+    const clipPath = generateTapeClipPath(isHorizontal, seed, i);
     
     switch (side) {
       case 0: // top
         style = {
-          top: '-8px', // closer to card
+          ...style,
+          top: '-8px',
           left: `${position}%`,
           width: `${length}px`,
-          height: '16px',
+          height: '19px',
           transform: `translateX(-50%) rotate(${rotation}deg)`,
+          clipPath: clipPath,
         };
         break;
       case 1: // right
         style = {
-          right: '-8px', // closer to card
+          ...style,
+          right: '-8px',
           top: `${position}%`,
-          width: '16px',
+          width: '19px',
           height: `${length}px`,
           transform: `translateY(-50%) rotate(${rotation}deg)`,
+          clipPath: clipPath,
         };
         break;
       case 2: // bottom
         style = {
-          bottom: '-8px', // closer to card
+          ...style,
+          bottom: '-8px',
           left: `${position}%`,
           width: `${length}px`,
-          height: '16px',
+          height: '19px',
           transform: `translateX(-50%) rotate(${rotation}deg)`,
+          clipPath: clipPath,
         };
         break;
       case 3: // left
         style = {
-          left: '-8px', // closer to card
+          ...style,
+          left: '-8px',
           top: `${position}%`,
-          width: '16px',
+          width: '19px',
           height: `${length}px`,
           transform: `translateY(-50%) rotate(${rotation}deg)`,
+          clipPath: clipPath,
         };
         break;
     }
