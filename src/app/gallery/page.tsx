@@ -149,15 +149,9 @@ export default function GalleryPage() {
 
   if (moodboards.length === 0) {
     return (
-      <div className="min-h-screen bg-white">
-        {/* Minimal geometric elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-1/4 right-1/4 w-96 h-96 border border-gray-100 rounded-full opacity-30"></div>
-          <div className="absolute bottom-1/4 left-1/4 w-64 h-64 bg-gray-50 rounded-full opacity-50"></div>
-        </div>
-        
-        <div className="relative flex flex-col items-center justify-center h-screen text-center px-4">
-          <div className="bg-white border border-gray-200 rounded-2xl p-12 shadow-lg">
+      <div className="min-h-full bg-white/80 backdrop-blur-sm">
+        <div className="flex flex-col items-center justify-center min-h-full text-center px-4 py-12">
+          <div className="bg-white/90 backdrop-blur-sm border border-white/50 rounded-2xl p-12 shadow-lg">
             <div className="mb-8 relative">
               <div className="w-24 h-24 mx-auto bg-black rounded-full flex items-center justify-center">
                 <Heart className="w-12 h-12 text-white" fill="currentColor" />
@@ -181,21 +175,8 @@ export default function GalleryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Minimal grid pattern */}
-      <div className="absolute inset-0 opacity-[0.02]">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Crect x='0' y='0' width='1' height='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-        }}></div>
-      </div>
-
-      {/* Subtle floating elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/3 left-1/4 w-px h-32 bg-gray-200 opacity-50"></div>
-        <div className="absolute bottom-1/3 right-1/4 w-32 h-px bg-gray-200 opacity-50"></div>
-      </div>
-
-      <div className="relative container mx-auto p-6 md:p-12 pt-24">
+    <div className="min-h-full bg-white/80 backdrop-blur-sm">
+      <div className="container mx-auto p-6 md:p-12 pt-8">
         {/* Minimal header */}
         <div className="text-center mb-16">
           <h1 className="text-5xl md:text-7xl font-light mb-6 text-black tracking-tight">
@@ -216,7 +197,7 @@ export default function GalleryPage() {
 
         {/* Call to action */}
         <div className="text-center mt-20 mb-12">
-          <div className="bg-gray-50 rounded-2xl p-12 border border-gray-200">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-12 border border-white/50">
             <h3 className="text-3xl font-light mb-4 text-black">
               Ready for More?
             </h3>

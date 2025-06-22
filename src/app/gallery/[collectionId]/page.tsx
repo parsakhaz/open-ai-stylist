@@ -115,13 +115,15 @@ export default function MoodboardDetailPage() {
 
   if (!moodboard) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-full bg-white/80 backdrop-blur-sm flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-light mb-4">Moodboard not found</h1>
-          <Button onClick={() => router.push('/gallery')} variant="outline">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Gallery
-          </Button>
+          <div className="bg-white/90 backdrop-blur-sm border border-white/50 rounded-2xl p-8">
+            <h1 className="text-2xl font-light mb-4">Moodboard not found</h1>
+            <Button onClick={() => router.push('/gallery')} variant="outline" className="bg-white/50 hover:bg-white/70 border-white/50">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Gallery
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -129,9 +131,9 @@ export default function MoodboardDetailPage() {
 
   return (
     <div 
-      className="min-h-screen"
+      className="min-h-full"
       style={{
-        backgroundColor: background?.colors[0] || '#ffffff',
+        backgroundColor: background?.colors[0] ? background.colors[0] + '80' : '#ffffff80',
         backgroundImage: background?.pattern,
       }}
     >
@@ -170,7 +172,7 @@ export default function MoodboardDetailPage() {
         ))}
       </div>
 
-      <div className="relative container mx-auto p-6 md:p-12 pt-24">
+      <div className="relative container mx-auto p-6 md:p-12 pt-8">
         {/* Back button */}
         <div className="mb-8">
           <Button 

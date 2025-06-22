@@ -139,7 +139,7 @@ export default function OnboardingPage() {
           {/* Header */}
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
-              {!isCollapsed && <img src="/assets/Logobigger.webp" alt="Stylist" />}
+              {!isCollapsed && <img src="/assets/Logobigger.webp" alt="Stylist" className="h-6 sm:h-8 w-auto" />}
               <img 
                 src="/assets/Collapse.svg" 
                 alt="Collapse" 

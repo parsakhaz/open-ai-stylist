@@ -1,6 +1,6 @@
-import { ChatSidebar } from '@/components/chat-sidebar';
+import { GallerySidebar } from '@/components/gallery-sidebar';
 
-export default function ChatLayout({
+export default function GalleryLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -10,8 +10,8 @@ export default function ChatLayout({
       {/* Animated Gradient Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-pink-25 to-purple-50 animate-gradient bg-[length:400%_400%]"></div>
       
-      <ChatSidebar />
-      <main className="flex-1 relative z-10">{children}</main>
+      <GallerySidebar />
+      <main className="flex-1 relative z-10 overflow-y-auto">{children}</main>
     </div>
   );
-} 
+}
