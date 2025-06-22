@@ -2,7 +2,17 @@ import { promises as fs } from 'fs';
 import path from 'path';
 
 const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
-const CONFIG_FILE = path.join(process.cwd(), 'data', 'model-images.json');
+const DATA_DIR = path.join(process.cwd(), 'data');
+const CONFIG_FILE = path.join(DATA_DIR, 'model-images.json');
+
+// Ensure the data directory exists
+async function ensureDataDir() {
+  try {
+    await fs.mkdir(DATA_DIR, { recursive: true });
+  } catch (error) {
+    console.error('[api/delete-image] Failed to create data directory:', error);
+  }
+}
 
 // Helper function to read the config file
 async function readConfig() {
@@ -17,7 +27,13 @@ async function readConfig() {
 
 // Helper function to write to the config file
 async function writeConfig(data: any) {
-  await fs.writeFile(CONFIG_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  try {
+    await ensureDataDir(); // Ensure directory exists before writing
+    await fs.writeFile(CONFIG_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (error) {
+    console.error('[api/delete-image] Failed to write config file:', error);
+    throw error;
+  }
 }
 
 // We'll use the HTTP DELETE method, which is standard for deletion actions

@@ -15,7 +15,8 @@ const validationSchema = z.object({
 
 // Define paths for reuse
 const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
-const CONFIG_FILE = path.join(process.cwd(), 'data', 'model-images.json');
+const DATA_DIR = path.join(process.cwd(), 'data');
+const CONFIG_FILE = path.join(DATA_DIR, 'model-images.json');
 
 // Ensure the upload directory exists
 async function ensureUploadsDir() {
@@ -23,6 +24,15 @@ async function ensureUploadsDir() {
     await fs.mkdir(UPLOADS_DIR, { recursive: true });
   } catch (error) {
     console.error('[api/validate-image] Failed to create uploads directory:', error);
+  }
+}
+
+// Ensure the data directory exists
+async function ensureDataDir() {
+  try {
+    await fs.mkdir(DATA_DIR, { recursive: true });
+  } catch (error) {
+    console.error('[api/validate-image] Failed to create data directory:', error);
   }
 }
 
@@ -39,6 +49,7 @@ async function readConfig() {
 
 async function writeConfig(data: any) {
   try {
+    await ensureDataDir(); // Ensure directory exists before writing
     await fs.writeFile(CONFIG_FILE, JSON.stringify(data, null, 2), 'utf-8');
   } catch (error) {
     console.error('[api/validate-image] Failed to write config file:', error);
