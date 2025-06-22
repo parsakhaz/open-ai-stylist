@@ -3,66 +3,128 @@
 import { useAppStore } from '../store/useAppStore';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Heart, Eye, Tag } from 'lucide-react';
+import { ArrowRight, Heart, Eye, Palette } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { getMoodboardAccents } from '@/lib/moodboard-backgrounds';
 
-// Collection card component
-function CollectionCard({ board, index }: { board: any; index: number }) {
+// Moodboard card component with dynamic backgrounds
+function MoodboardCard({ board, index }: { board: any; index: number }) {
   const router = useRouter();
+  const { background, accents } = getMoodboardAccents(board.id);
   
   // Get first 4 items for preview grid
   const previewItems = board.items.slice(0, 4);
   
   return (
     <div 
-      className="group cursor-pointer bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-200 overflow-hidden"
+      className="group cursor-pointer bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-200 overflow-hidden"
       onClick={() => router.push(`/gallery/${board.id}`)}
     >
-      {/* Preview grid */}
-      <div className="relative aspect-square bg-gray-50 overflow-hidden">
+      {/* Dynamic background with preview grid */}
+      <div 
+        className="relative aspect-square overflow-hidden"
+        style={{
+          backgroundColor: background.colors[0],
+          backgroundImage: background.pattern,
+        }}
+      >
+        {/* Strategic accent elements */}
+        {accents.map((accent, idx) => (
+          <div
+            key={idx}
+            className={`absolute pointer-events-none`}
+            style={{
+              left: `${accent.x}%`,
+              top: `${accent.y}%`,
+              transform: `rotate(${accent.rotation}deg)`,
+              opacity: accent.opacity,
+            }}
+          >
+            {accent.type === 'circle' && (
+              <div 
+                className="rounded-full border border-gray-400"
+                style={{ width: accent.size, height: accent.size }}
+              />
+            )}
+            {accent.type === 'line' && (
+              <div 
+                className="bg-gray-400"
+                style={{ width: accent.size, height: 1 }}
+              />
+            )}
+            {accent.type === 'square' && (
+              <div 
+                className="border border-gray-400"
+                style={{ width: accent.size * 0.8, height: accent.size * 0.8 }}
+              />
+            )}
+          </div>
+        ))}
+        
+        {/* Preview items positioned strategically */}
         {previewItems.length > 0 ? (
-          <div className="grid grid-cols-2 h-full">
-            {previewItems.map((item, idx) => (
-              <div key={item.id} className="relative overflow-hidden">
-                <img 
-                  src={item.tryOnUrl || item.imageUrl} 
-                  alt={item.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                {idx === 3 && board.items.length > 4 && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                    <span className="text-white font-medium text-sm">+{board.items.length - 4} more</span>
-                  </div>
-                )}
-              </div>
-            ))}
+          <div className="absolute inset-4">
+            {previewItems.map((item, idx) => {
+              // Strategic positioning for moodboard feel
+              const positions = [
+                { top: '5%', left: '10%', width: '35%', rotation: '-2deg' },
+                { top: '15%', right: '5%', width: '40%', rotation: '1deg' },
+                { bottom: '20%', left: '5%', width: '38%', rotation: '2deg' },
+                { bottom: '5%', right: '15%', width: '32%', rotation: '-1deg' },
+              ];
+              const pos = positions[idx] || positions[0];
+              
+              return (
+                <div
+                  key={item.id}
+                  className="absolute shadow-md rounded-lg overflow-hidden border-2 border-white group-hover:scale-105 transition-transform duration-500"
+                  style={{
+                    ...pos,
+                    aspectRatio: '3/4',
+                    transform: `rotate(${pos.rotation}) ${idx < 3 ? 'scale(1)' : 'scale(0.85)'}`,
+                    zIndex: 4 - idx,
+                  }}
+                >
+                  <img 
+                    src={item.tryOnUrl || item.imageUrl} 
+                    alt={item.name}
+                    className="w-full h-full object-cover"
+                  />
+                  {idx === 3 && board.items.length > 4 && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                      <span className="text-white font-medium text-xs">+{board.items.length - 4}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         ) : (
-          <div className="flex items-center justify-center h-full bg-gray-100">
-            <Heart className="w-12 h-12 text-gray-400" />
+          <div className="flex items-center justify-center h-full">
+            <Palette className="w-12 h-12 text-gray-300" />
           </div>
         )}
         
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300"></div>
+        {/* Subtle overlay */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all duration-500"></div>
         
         {/* View button */}
         <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
-          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md">
+          <div className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg border border-white/50">
             <Eye className="w-4 h-4 text-gray-700" />
           </div>
         </div>
         
-        {/* Collection number badge */}
+        {/* Moodboard badge */}
         <div className="absolute top-4 left-4">
-          <div className="inline-flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-gray-200/50">
-            <Tag className="w-3 h-3 text-gray-600" />
-            <span className="font-medium text-gray-700 text-xs">Collection {index + 1}</span>
+          <div className="inline-flex items-center gap-2 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-white/50 shadow-sm">
+            <Palette className="w-3 h-3 text-gray-600" />
+            <span className="font-medium text-gray-700 text-xs">Board {index + 1}</span>
           </div>
         </div>
       </div>
       
-      {/* Collection info */}
+      {/* Moodboard info */}
       <div className="p-6">
         <h3 className="font-semibold text-gray-900 mb-2 text-lg group-hover:text-black transition-colors">
           {board.title}
@@ -73,8 +135,8 @@ function CollectionCard({ board, index }: { board: any; index: number }) {
         
         {/* Stats */}
         <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-500">{board.items.length} items</span>
-          <span className="text-gray-400 group-hover:text-gray-600 transition-colors">View collection →</span>
+          <span className="text-gray-500">{board.items.length} pieces</span>
+          <span className="text-gray-400 group-hover:text-gray-600 transition-colors">Open moodboard →</span>
         </div>
       </div>
     </div>
@@ -102,10 +164,10 @@ export default function GalleryPage() {
               </div>
             </div>
             <h1 className="text-4xl font-bold mb-4 text-black">
-              No Collections Yet
+              No Moodboards Yet
             </h1>
             <p className="text-gray-600 mb-8 text-lg max-w-md">
-              Start chatting with Chad to discover pieces and create your first collection
+              Start chatting with StyleList to discover pieces and create your first moodboard
             </p>
             <Link href="/chat">
               <Button className="bg-black hover:bg-gray-800 text-white px-8 py-3 rounded-lg text-lg shadow-md hover:shadow-lg transition-all duration-300">
@@ -137,18 +199,18 @@ export default function GalleryPage() {
         {/* Minimal header */}
         <div className="text-center mb-16">
           <h1 className="text-5xl md:text-7xl font-light mb-6 text-black tracking-tight">
-            Collections
+            Moodboards
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto font-light">
-            Your curated fashion collections, organized by style
+            Your curated fashion visions, artfully arranged
           </p>
           <div className="w-16 h-px bg-black mx-auto mt-8"></div>
         </div>
 
-        {/* Collections grid */}
+        {/* Moodboards grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {moodboards.map((board, boardIndex) => (
-            <CollectionCard key={board.id} board={board} index={boardIndex} />
+            <MoodboardCard key={board.id} board={board} index={boardIndex} />
           ))}
         </div>
 
@@ -159,7 +221,7 @@ export default function GalleryPage() {
               Ready for More?
             </h3>
             <p className="text-gray-600 mb-6 text-lg font-light">
-              Chat with Chad to discover new pieces and create more collections
+              Chat with StyleList to discover new pieces and create more moodboards
             </p>
             <Link href="/chat">
               <Button className="bg-black hover:bg-gray-800 text-white px-8 py-3 rounded-lg text-lg shadow-md hover:shadow-lg transition-all duration-300">

@@ -379,11 +379,11 @@ export default function ChatPage() {
           )}
         </div>
         
-        {/* Mood board creation sticky bar */}
+        {/* Moodboard creation sticky bar */}
         {selectedProducts.length > 0 && (
           <div className="p-4 bg-white border-t sticky bottom-16 z-10">
             <Button onClick={handleCreateBoard} className="w-full bg-green-600 hover:bg-green-700">
-              Create Mood Board with {selectedProducts.length} items
+              Create Moodboard with {selectedProducts.length} pieces
             </Button>
           </div>
         )}

@@ -3,7 +3,8 @@
 import { useAppStore, MoodboardItem } from '../../store/useAppStore';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Heart, ExternalLink, Star, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, Heart, ExternalLink, Star, ShoppingBag, Palette } from 'lucide-react';
+import { getMoodboardAccents } from '@/lib/moodboard-backgrounds';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -103,19 +104,20 @@ function MoodboardProductCard({ item }: { item: MoodboardItem }) {
   );
 }
 
-export default function CollectionDetailPage() {
+export default function MoodboardDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const collectionId = params.collectionId as string;
+  const moodboardId = params.collectionId as string;
   const { moodboards } = useAppStore();
 
-  const collection = moodboards.find(board => board.id === collectionId);
+  const moodboard = moodboards.find(board => board.id === moodboardId);
+  const { background, accents } = moodboard ? getMoodboardAccents(moodboard.id) : { background: null, accents: [] };
 
-  if (!collection) {
+  if (!moodboard) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-light mb-4">Collection not found</h1>
+          <h1 className="text-2xl font-light mb-4">Moodboard not found</h1>
           <Button onClick={() => router.push('/gallery')} variant="outline">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Gallery
@@ -126,12 +128,46 @@ export default function CollectionDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Minimal background elements */}
-      <div className="absolute inset-0 opacity-[0.02]">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Crect x='0' y='0' width='1' height='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-        }}></div>
+    <div 
+      className="min-h-screen"
+      style={{
+        backgroundColor: background?.colors[0] || '#ffffff',
+        backgroundImage: background?.pattern,
+      }}
+    >
+      {/* Dynamic accent elements */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        {accents.map((accent, idx) => (
+          <div
+            key={idx}
+            className="absolute"
+            style={{
+              left: `${accent.x}%`,
+              top: `${accent.y}%`,
+              transform: `rotate(${accent.rotation}deg)`,
+              opacity: accent.opacity * 0.5,
+            }}
+          >
+            {accent.type === 'circle' && (
+              <div 
+                className="rounded-full border border-gray-400"
+                style={{ width: accent.size * 1.5, height: accent.size * 1.5 }}
+              />
+            )}
+            {accent.type === 'line' && (
+              <div 
+                className="bg-gray-400"
+                style={{ width: accent.size * 1.5, height: 1 }}
+              />
+            )}
+            {accent.type === 'square' && (
+              <div 
+                className="border border-gray-400"
+                style={{ width: accent.size * 1.2, height: accent.size * 1.2 }}
+              />
+            )}
+          </div>
+        ))}
       </div>
 
       <div className="relative container mx-auto p-6 md:p-12 pt-24">
@@ -140,42 +176,46 @@ export default function CollectionDetailPage() {
           <Button 
             onClick={() => router.push('/gallery')} 
             variant="ghost" 
-            className="hover:bg-gray-100"
+            className="bg-white/80 backdrop-blur-sm hover:bg-white/90 border border-white/50"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Collections
+            Back to Moodboards
           </Button>
         </div>
 
-        {/* Collection header */}
+        {/* Moodboard header */}
         <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/50 mb-6">
+            <Palette className="w-4 h-4 text-gray-600" />
+            <span className="text-sm text-gray-600">Moodboard</span>
+          </div>
           <h1 className="text-5xl md:text-6xl font-light mb-6 text-black tracking-tight">
-            {collection.title}
+            {moodboard.title}
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto font-light mb-8">
-            {collection.description}
+          <p className="text-xl text-gray-700 max-w-2xl mx-auto font-light mb-8">
+            {moodboard.description}
           </p>
-          <div className="inline-flex items-center gap-2 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
-            <span className="text-sm text-gray-600">{collection.items.length} items</span>
+          <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/50">
+            <span className="text-sm text-gray-600">{moodboard.items.length} pieces</span>
           </div>
           <div className="w-16 h-px bg-black mx-auto mt-8"></div>
         </div>
 
         {/* Products masonry grid */}
         <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
-          {collection.items.map((item) => (
+          {moodboard.items.map((item) => (
             <MoodboardProductCard key={item.id} item={item} />
           ))}
         </div>
 
-        {/* Collection footer */}
+        {/* Moodboard footer */}
         <div className="text-center mt-20">
-          <div className="bg-gray-50 rounded-2xl p-12 border border-gray-200">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-12 border border-white/50">
             <h3 className="text-3xl font-light mb-4 text-black">
-              Love this collection?
+              Love this moodboard?
             </h3>
-            <p className="text-gray-600 mb-6 text-lg font-light">
-              Chat with Chad to discover similar pieces or create a new collection
+            <p className="text-gray-700 mb-6 text-lg font-light">
+              Chat with StyleList to discover similar pieces or create a new moodboard
             </p>
             <div className="flex gap-4 justify-center">
               <Button 
@@ -187,8 +227,9 @@ export default function CollectionDetailPage() {
               <Button 
                 onClick={() => router.push('/gallery')} 
                 variant="outline"
+                className="bg-white/50 hover:bg-white/70 border-white/50"
               >
-                View All Collections
+                View All Moodboards
               </Button>
             </div>
           </div>
