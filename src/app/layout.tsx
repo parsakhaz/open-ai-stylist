@@ -3,13 +3,16 @@
 // useEffect import removed since we no longer need it
 import { useAppStore } from './store/useAppStore';
 import './globals.css';
-import { Inter } from 'next/font/google';
+import { Poppins } from 'next/font/google';
 import { FloatingNav } from '@/components/aceternity/floating-nav';
 import { FashionLoading } from '@/components/fashion-loading';
 import { Home, Bot, Image, GalleryHorizontal } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 
-const inter = Inter({ subsets: ['latin'] });
+const poppins = Poppins({ 
+  subsets: ['latin'],
+  weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900']
+});
 
 export default function RootLayout({
   children,
@@ -30,7 +33,7 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={poppins.className}>
         {isLoading && <FashionLoading />}
         
         <Toaster 

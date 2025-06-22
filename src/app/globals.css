@@ -44,6 +44,11 @@
       background-position: 100% 50%;
     }
   }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
 }
 
 @variant dark (&:where(.dark, .dark *));
@@ -81,4 +86,8 @@
 
 .animate-gradient {
   animation: gradient 15s ease infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
 }
