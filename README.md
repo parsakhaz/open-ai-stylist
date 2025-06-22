@@ -6,9 +6,10 @@ An AI-powered fashion styling application that provides personalized clothing re
 
 ### Core Functionality
 - **AI Fashion Stylist**: Conversational interface powered by Llama-4-Maverick-17B model
+- **Auto-Style Mode**: ✨ **NEW** - Automatically generates moodboards from styling advice with gender-aware product searches
 - **Image Analysis**: Upload photos to receive personalized styling recommendations
 - **Product Search**: Integration with Amazon product catalog via RapidAPI
-- **Moodboard Creation**: Visual collections of selected clothing items
+- **Moodboard Creation**: Visual collections of selected clothing items with virtual try-ons
 - **Multi-Modal Chat**: Support for both text and image inputs in conversations
 
 ### Technical Capabilities
@@ -93,6 +94,27 @@ npm run dev
 3. View products in responsive grid layouts
 4. Access direct purchase links for selected items
 
+### Auto-Style Mode ✨
+The Auto-Style feature automatically creates moodboards from styling conversations:
+
+1. **Enable Auto-Style**: Click the sparkles ✨ button in the chat input area
+2. **Get Styling Advice**: Have a normal conversation with the AI stylist
+3. **Automatic Processing**: When the AI provides styling advice, Auto-Style:
+   - Analyzes the advice to detect gender context (men/women/unisex)
+   - Extracts key clothing items mentioned
+   - Performs gender-aware product searches
+   - Generates virtual try-ons with your model photos
+   - Creates a complete moodboard automatically
+4. **Instant Results**: Receive notifications when your auto-generated moodboards are ready
+
+#### Auto-Style Features:
+- **Gender-Aware Search**: Automatically detects and uses appropriate gender-specific search terms
+- **Smart Product Selection**: AI chooses the most relevant items from styling advice
+- **Creative Moodboard Titles**: AI generates compelling, context-appropriate board names
+- **Virtual Try-Ons**: Automatically applies your model photos to products
+- **Background Processing**: Non-blocking operation that doesn't interrupt conversations
+- **Zero Manual Effort**: Complete styling boards created without user intervention
+
 ## API Endpoints
 
 ### `/api/chat`
@@ -114,6 +136,20 @@ Moodboard creation and product categorization
 - **Method**: POST
 - **Input**: Selected products and user preferences
 - **Output**: Categorized collections with metadata
+
+### `/api/proactive-style-generator`
+✨ **NEW** - Auto-Style background processing endpoint
+- **Method**: POST
+- **Input**: AI styling advice text
+- **Processing**: Gender detection, product search, virtual try-ons
+- **Output**: Complete moodboards with try-on images
+- **Features**: Isolated infrastructure, non-blocking operation
+
+### `/api/notify-try-on-complete`
+Notification system for completed moodboard processing
+- **Method**: GET/POST
+- **Function**: Polling endpoint for auto-generated moodboard completion
+- **Integration**: Works with both manual and auto-generated moodboards
 
 ## Project Structure
 

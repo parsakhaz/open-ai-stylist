@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Copy, RefreshCw, Bot, User, Loader2, Send, Star, ImagePlus, X } from 'lucide-react';
+import { Copy, RefreshCw, Bot, User, Loader2, Send, Star, ImagePlus, X, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import ReactMarkdown from 'react-markdown';
@@ -160,6 +160,8 @@ export default function ChatPage() {
     setChatTitle, 
     selectedProducts, 
     clearSelectedProducts, 
+    isAutoStyleModeEnabled,
+    toggleAutoStyleMode,
     approvedModelImageUrls,
     setIsLoading,
     createOrUpdateMoodboard,
@@ -169,11 +171,13 @@ export default function ChatPage() {
     addChatSession,
     chatMessages,
     setChatMessages,
+    addCompletedMoodboard,
     setMoodboardProcessing,
     setMoodboardCompleted,
   } = useAppStore();
 
-  // NEW STATE for image selection
+  // NEW STATE for image selection and auto-styling
+  const [processedAutoStyleMessageIds, setProcessedAutoStyleMessageIds] = useState(new Set<string>());
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [imageToSend, setImageToSend] = useState<string | null>(null);
   
@@ -204,6 +208,55 @@ export default function ChatPage() {
       setChatMessages(chatId, messages);
     }
   }, [messages, chatId, setChatMessages]);
+
+  // NEW: Effect to trigger the isolated, proactive styling process
+  useEffect(() => {
+    console.log('[Auto-Style] Effect triggered:', {
+      isAutoStyleModeEnabled,
+      messagesLength: messages.length,
+      isLoading,
+      lastMessageRole: messages[messages.length - 1]?.role,
+      lastMessageId: messages[messages.length - 1]?.id
+    });
+    
+    if (!isAutoStyleModeEnabled || messages.length === 0) {
+      console.log('[Auto-Style] Skipping - not enabled or no messages');
+      return;
+    }
+
+    const lastMessage = messages[messages.length - 1];
+
+    // Check if the last message is from the assistant and hasn't been processed yet
+    if (lastMessage && lastMessage.role === 'assistant' && !isLoading && !processedAutoStyleMessageIds.has(lastMessage.id)) {
+      console.log('[Auto-Style] Triggering for message:', lastMessage.id);
+      
+      // Mark as processed immediately to prevent duplicates
+      setProcessedAutoStyleMessageIds(prev => new Set(prev).add(lastMessage.id));
+
+      // Fire and forget the call to our new isolated endpoint
+      console.log('[Auto-Style] Sending advice text for analysis:', lastMessage.content.substring(0, 100) + '...');
+      fetch('/api/proactive-style-generator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adviceText: lastMessage.content }),
+      }).then(response => {
+        console.log('[Auto-Style] API response:', response.status);
+        if (response.ok) {
+          toast('🪄 Auto-styling with gender-aware search...', { icon: <Sparkles className="w-4 h-4 text-purple-400" /> });
+        } else {
+          console.error('[Auto-Style] API call failed:', response.status);
+        }
+      }).catch(error => {
+        console.error('[Auto-Style] API call error:', error);
+      });
+    } else {
+      console.log('[Auto-Style] Not triggering:', {
+        isAssistant: lastMessage?.role === 'assistant',
+        notLoading: !isLoading,
+        notProcessed: !processedAutoStyleMessageIds.has(lastMessage?.id || '')
+      });
+    }
+  }, [messages, isLoading, isAutoStyleModeEnabled, processedAutoStyleMessageIds]);
 
   // Check if current chat still exists
   useEffect(() => {
@@ -309,7 +362,13 @@ export default function ChatPage() {
         const data = await res.json();
         if (data.status === 'completed') {
           clearInterval(interval);
-          updateMoodboardWithTryOns(boardId, data.tryOnUrlMap, data.categorization);
+          if (data.newBoard) {
+            // This is an auto-generated board, add it directly.
+            addCompletedMoodboard(data.newBoard);
+          } else {
+            // This is a manually created board, update it.
+            updateMoodboardWithTryOns(boardId, data.tryOnUrlMap, data.categorization);
+          }
           setMoodboardCompleted(boardId);
           triggerCelebrationConfetti();
           toast.success('✨ Moodboard upgraded with virtual try-ons!');
@@ -476,6 +535,17 @@ export default function ChatPage() {
         
         <div className="p-4 relative z-20">
           <div className="max-w-4xl mx-auto">
+            {/* Auto-Style Status Indicator */}
+            {isAutoStyleModeEnabled && (
+              <div className="mb-3 flex justify-center">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200 rounded-full text-sm text-purple-700 font-medium shadow-sm">
+                  <Sparkles className="w-4 h-4 text-purple-500" />
+                  Auto-Styling Active
+                  <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                </div>
+              </div>
+            )}
+            
             {error && ( <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"> <strong>Error:</strong> {error.message} </div> )}
             <form onSubmit={handleFormSubmit} className="relative">
               {/* NEW: Image Preview */}
@@ -512,11 +582,32 @@ export default function ChatPage() {
                   <TooltipContent><p>Add a photo</p></TooltipContent>
                 </Tooltip>
                 
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        console.log('[Auto-Style] Toggle clicked, current state:', isAutoStyleModeEnabled);
+                        toggleAutoStyleMode();
+                        console.log('[Auto-Style] New state will be:', !isAutoStyleModeEnabled);
+                      }}
+                      className={`absolute top-1/2 -translate-y-1/2 left-14 h-9 w-9 rounded-full z-10 transition-colors ${
+                        isAutoStyleModeEnabled ? 'bg-purple-100 text-purple-600 hover:bg-purple-200' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
+                      }`}
+                    >
+                      <Sparkles className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top"><p className="font-semibold">{isAutoStyleModeEnabled ? 'Auto-Styling is ON' : 'Turn on Auto-Styling'}</p><p className="text-xs text-gray-400">Magically creates style boards from advice.</p></TooltipContent>
+                </Tooltip>
+                
                 <Textarea
                   value={input}
                   onChange={handleInputChange}
                   placeholder={imageToSend ? "Ask me about this photo..." : "Describe your style, or add a photo..."}
-                  className="w-full p-4 pl-16 pr-16 border-0 bg-transparent resize-none focus:ring-0 focus:outline-none text-gray-800 placeholder-gray-500"
+                  className="w-full p-4 pl-28 pr-16 border-0 bg-transparent resize-none focus:ring-0 focus:outline-none text-gray-800 placeholder-gray-500"
                   rows={1}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {

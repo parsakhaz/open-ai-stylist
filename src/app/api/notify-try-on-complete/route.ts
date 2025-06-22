@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server';
 
-const completedJobsCache = new Map<string, { tryOnUrlMap: Record<string, string>, categorization: any }>();
+const completedJobsCache = new Map<string, { tryOnUrlMap?: Record<string, string>, categorization?: any, newBoard?: any }>();
 
 export async function POST(req: Request) {
     try {
-        const { boardId, tryOnUrlMap, categorization } = await req.json();
-        if (!boardId || !tryOnUrlMap) {
-            return NextResponse.json({ error: 'Missing boardId or tryOnUrlMap' }, { status: 400 });
+        const { boardId, tryOnUrlMap, categorization, newBoard } = await req.json();
+        if (!boardId || (!tryOnUrlMap && !newBoard)) {
+            return NextResponse.json({ error: 'Missing boardId or required data' }, { status: 400 });
         }
         
-        completedJobsCache.set(boardId, { tryOnUrlMap, categorization });
-        console.log(`[notify-api] Cached completed try-on data for board: ${boardId}`);
+        completedJobsCache.set(boardId, { tryOnUrlMap, categorization, newBoard });
+        console.log(`[notify-api] Cached completed data for board: ${boardId}`, newBoard ? '(auto-generated)' : '(manual)');
 
         setTimeout(() => {
             completedJobsCache.delete(boardId);
