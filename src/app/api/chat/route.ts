@@ -186,20 +186,20 @@ export async function POST(req: Request) {
            - Examples: "Ready to shop? I can help you find: **dark green trousers**, **oversized blazer**, or **black turtleneck**. Which catches your eye?"
            - Wait for the user to choose, then make the appropriate tool call`,
           messages: textOnlyMessages,
-          tools: {
-            searchProducts: tool({
-              description: 'Search for fashion products based on styling recommendations',
-              parameters: z.object({
-                query: z.string().describe('Product search query based on styling advice'),
-                itemType: z.string().optional().describe('Item category'),
+                      tools: {
+              searchProducts: tool({
+                description: 'Search for clothing items (tops and bottoms only) based on styling recommendations. Focus only on shirts, blouses, sweaters, jackets, blazers, pants, jeans, skirts, shorts. Do NOT search for shoes, accessories, or other non-clothing items.',
+                parameters: z.object({
+                  query: z.string().describe('Product search query for clothing items only based on styling advice'),
+                  itemType: z.string().optional().describe('Clothing category like "pants", "jeans", "shirts", "jackets", "skirts", "sweaters"'),
+                }),
+                execute: async ({ query }): Promise<RichProduct[]> => {
+                  console.log(`[tool:searchProducts] Executing for image-based recommendation: "${query}"`);
+                  const finalResults = await searchAndTransformProducts(query);
+                  return finalResults;
+                },
               }),
-              execute: async ({ query }): Promise<RichProduct[]> => {
-                console.log(`[tool:searchProducts] Executing for image-based recommendation: "${query}"`);
-                const finalResults = await searchAndTransformProducts(query);
-                return finalResults;
-              },
-            }),
-          },
+            },
         });
 
         return result.toDataStreamResponse();
@@ -251,8 +251,8 @@ export async function POST(req: Request) {
       
       **Step 2B: ASK USER TO CHOOSE (for styling advice)**
       - When giving styling advice, do NOT make tool calls automatically
-      - Instead, end by asking: "Which item would you like me to find for you first?" and list 2-3 specific options
-      - Example: "Ready to shop? I can help you find: **black skinny jeans**, **oversized blazer**, or **white sneakers**. Which interests you most?"
+      - Instead, end by asking: "Which clothing item would you like me to find for you first?" and list 2-3 specific tops or bottoms
+      - Example: "Ready to shop? I can help you find: **black skinny jeans**, **oversized blazer**, or **white button-down shirt**. Which interests you most?"
       - Wait for the user to choose, then make the appropriate tool call
       
       **Step 2C: DIRECT TOOL CALL (for specific product requests)**
@@ -267,13 +267,13 @@ export async function POST(req: Request) {
       **CRITICAL FAILURE INSTRUCTION:** If the \`searchProducts\` tool returns an empty array ([]), inform the user and suggest alternative search terms.`,
 
       messages: processedMessages.filter(m => typeof m.content === 'string' || !Array.isArray(m.content)), // Only text messages
-      tools: {
-        searchProducts: tool({
-          description: 'Searches the product catalog for clothing items based on a user query, such as style, color, or item type (e.g., "pants", "streetwear fits", "korean minimal shirt", "sneakers", "boots"). IMPORTANT: Consider the full conversation context when constructing your query - if the user mentioned style preferences earlier, include them in your search. Use the itemType parameter for better accuracy.',
-          parameters: z.object({
-            query: z.string().describe('The user\'s search query. Be descriptive and incorporate conversation context. E.g., if user mentioned "korean minimal" earlier and now wants "black jacket", search for "korean minimal black jacket".'),
-            itemType: z.string().optional().describe('Specific item category like "pants", "upper-body", "dress", "jacket", "footwear".'),
-          }),
+              tools: {
+          searchProducts: tool({
+            description: 'Searches the product catalog for clothing items (tops and bottoms only) based on a user query. Focus on tops like shirts, blouses, sweaters, jackets, blazers and bottoms like pants, jeans, skirts, shorts. Do NOT search for shoes, accessories, or other non-clothing items.',
+            parameters: z.object({
+              query: z.string().describe('The user\'s search query for clothing items only. Be descriptive and incorporate conversation context. E.g., if user mentioned "korean minimal" earlier and now wants "black jacket", search for "korean minimal black jacket".'),
+              itemType: z.string().optional().describe('Specific clothing category like "pants", "jeans", "shirts", "jackets", "skirts", "sweaters".'),
+            }),
           execute: async ({ query }): Promise<RichProduct[]> => {
             console.log(`[tool:searchProducts] Executing with REAL Amazon API for query: "${query}"`);
             const finalResults = await searchAndTransformProducts(query);

@@ -24,6 +24,10 @@ export default function RootLayout({
 
   return (
     <html lang="en">
+      <head>
+        <title>StyleList - AI Fashion Stylist</title>
+        <meta name="description" content="Discover your perfect style with StyleList, the AI-powered fashion stylist. Get personalized outfit recommendations and style advice." />
+      </head>
       <body className={poppins.className}>
         {isLoading && <FashionLoading />}
         

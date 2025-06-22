@@ -366,7 +366,7 @@ export default function ChatPage() {
                   <div className="text-center mb-6"> <img src="/assets/hanger.svg" alt="Hanger" className="w-16 h-16 mx-auto" /> </div>
                   <div className="text-center mb-2"> <span className="text-sm font-medium text-black"> <span className="text-[#7D8FE2] font-bold">Step 2</span> out of 3 </span> </div>
                   <h1 className="text-4xl font-bold text-gray-900 text-center mb-4"> What would you like to wear? </h1>
-                  <p className="text-lg text-gray-600 text-center mb-8"> Get personalized styling advice based on your skin tone, body type, and lifestyle. Upload a photo or describe your style goals! </p>
+                                      <p className="text-lg text-gray-600 text-center mb-8"> Get personalized styling advice for tops and bottoms based on your skin tone, body type, and lifestyle. Upload a photo or describe your style goals! </p>
                   <div className="mb-8">
                                           <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Get Professional Styling Advice</h3>
                     <div className="flex flex-wrap gap-3 justify-center">
