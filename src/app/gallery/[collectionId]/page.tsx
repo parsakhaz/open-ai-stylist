@@ -3,7 +3,7 @@
 import { useAppStore, MoodboardItem } from '../../store/useAppStore';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Heart, ExternalLink, Star, ShoppingBag, Palette, X } from 'lucide-react';
+import { ArrowLeft, Heart, ExternalLink, Star, ShoppingBag, Palette, X, RefreshCw } from 'lucide-react';
 import { getMoodboardAccents } from '@/lib/moodboard-backgrounds';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,49 +11,40 @@ import { Kalam } from 'next/font/google';
 
 const kalam = Kalam({ subsets: ['latin'], weight: ['400', '700'] });
 
-// Generate strategic positions for canvas layout with better spacing
-function generateCanvasPosition(index: number, totalItems: number) {
-  // Create a more natural spread across the canvas with better spacing to prevent overlap
-  const positions = [
-    // Top row - improved spacing
-    { top: '5%', left: '8%', width: '20%', rotation: '-3deg', scale: 1.0 },
-    { top: '8%', left: '35%', width: '22%', rotation: '2deg', scale: 1.1 },
-    { top: '3%', left: '65%', width: '18%', rotation: '-1deg', scale: 0.95 },
-    
-    // Second row - better vertical spacing
-    { top: '30%', left: '5%', width: '24%', rotation: '1deg', scale: 1.15 },
-    { top: '34%', left: '37%', width: '20%', rotation: '-2deg', scale: 1.0 },
-    { top: '28%', left: '67%', width: '26%', rotation: '2.5deg', scale: 1.2 },
-    
-    // Third row - improved spacing
-    { top: '58%', left: '10%', width: '22%', rotation: '-1deg', scale: 1.05 },
-    { top: '55%', left: '42%', width: '24%', rotation: '1.5deg', scale: 1.1 },
-    { top: '62%', left: '72%', width: '20%', rotation: '-2.5deg', scale: 1.0 },
-    
-    // Fourth row - better spacing
-    { top: '82%', left: '8%', width: '23%', rotation: '2deg', scale: 1.08 },
-    { top: '79%', left: '40%', width: '21%', rotation: '-1deg', scale: 1.0 },
-    { top: '85%', left: '70%', width: '25%', rotation: '1deg', scale: 1.15 },
-  ];
+// Generate strategic positions for canvas layout with row-based screen height spacing
+function generateCanvasPosition(index: number, totalItems: number, seed: number = 12345) {
+  const itemsPerRow = 3;
+  const row = Math.floor(index / itemsPerRow);
+  const col = index % itemsPerRow;
   
-  // If we have more items than predefined positions, generate them algorithmically with better spacing
-  if (index >= positions.length) {
-    const extraIndex = index - positions.length;
-    const rowHeight = 115; // Start below the predefined positions with more space
-    const itemsPerRow = 3; // Fewer items per row to prevent overlap
-    const row = Math.floor(extraIndex / itemsPerRow);
-    const col = extraIndex % itemsPerRow;
-    
-    return {
-      top: `${rowHeight + (row * 28)}%`, // More vertical spacing
-      left: `${8 + (col * 32)}%`, // More horizontal spacing
-      width: `${20 + (Math.random() * 6)}%`, // Slightly smaller random width between 20-26%
-      rotation: `${(Math.random() - 0.5) * 6}deg`, // Random rotation -3 to 3 degrees
-      scale: 1.0 + (Math.random() * 0.25), // Random scale 1.0 to 1.25
-    };
-  }
+  // Seeded random function
+  const seededRandom = (i: number) => {
+    const x = Math.sin(seed * (i + index + 1)) * 10000;
+    return x - Math.floor(x);
+  };
   
-  return positions[index];
+  // Each row takes up a more reasonable height
+  const rowHeightVh = 60; // 60vh per row
+  const baseTopOffset = 5; // 5vh from top of each row
+  const baseLeftOffset = 8; // 8% from left
+  const itemSpacing = 32; // 32% spacing between items horizontally
+  
+  // Calculate position within the current row
+  const topPosition = (row * rowHeightVh) + baseTopOffset + (seededRandom(1) * 15); // Add some vertical variation within row
+  const leftPosition = baseLeftOffset + (col * itemSpacing) + (seededRandom(2) * 8 - 4); // Add some horizontal variation
+  
+  // Random properties for natural look
+  const randomWidth = 18 + (seededRandom(3) * 8); // 18-26% width
+  const randomRotation = (seededRandom(4) - 0.5) * 8; // -4 to 4 degrees
+  const randomScale = 0.95 + (seededRandom(5) * 0.3); // 0.95 to 1.25 scale
+  
+  return {
+    top: `${Math.min(topPosition, (row * rowHeightVh) + 50)}vh`, // Use vh units, max 50vh within each row
+    left: `${Math.max(5, Math.min(leftPosition, 85))}%`, // Keep within 5-85% horizontally
+    width: `${randomWidth}%`,
+    rotation: `${randomRotation}deg`,
+    scale: randomScale,
+  };
 }
 
 // Generate realistic tape edge patterns using SVG clip-path
@@ -347,9 +338,14 @@ export default function MoodboardDetailPage() {
   const router = useRouter();
   const moodboardId = params.collectionId as string;
   const { moodboards } = useAppStore();
+  const [layoutSeed, setLayoutSeed] = useState(12345);
 
   const moodboard = moodboards.find(board => board.id === moodboardId);
   const { background, accents } = moodboard ? getMoodboardAccents(moodboard.id) : { background: null, accents: [] };
+  
+  const refreshLayout = () => {
+    setLayoutSeed(Math.floor(Math.random() * 100000));
+  };
 
   if (!moodboard) {
     return (
@@ -439,13 +435,22 @@ export default function MoodboardDetailPage() {
               </div>
             </div>
             
-            <div className="w-24"></div> {/* Spacer for centering */}
+            <Button 
+              onClick={refreshLayout}
+              variant="ghost" 
+              size="sm"
+              className="hover:bg-gray-100 flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh Layout
+            </Button>
           </div>
         </div>
 
         {/* Canvas-style moodboard layout with light cream background */}
-        <div className="relative min-h-screen w-full" 
+        <div className="relative w-full" 
              style={{
+               minHeight: `${Math.max(1, Math.ceil(moodboard.items.length / 3)) * 60}vh`, // Dynamic height based on rows needed
                backgroundColor: '#FEFCF9',
                backgroundImage: `
                  radial-gradient(circle at 20% 30%, rgba(139, 69, 19, 0.02) 1px, transparent 1px),
@@ -465,10 +470,10 @@ export default function MoodboardDetailPage() {
              }}>
 
           {moodboard.items.map((item, index) => {
-            const position = generateCanvasPosition(index, moodboard.items.length);
+            const position = generateCanvasPosition(index, moodboard.items.length, layoutSeed);
             return (
               <MoodboardProductCard 
-                key={item.id} 
+                key={`${item.id}-${layoutSeed}`} // Add layoutSeed to key to force re-render
                 item={item} 
                 boardId={moodboard.id} 
                 position={position}
