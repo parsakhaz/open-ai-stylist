@@ -55,14 +55,17 @@ async function getApprovedModelUrl(): Promise<string | null> {
 async function processTryOnsInBackground(boardId: string, products: Product[], categorization: any) {
     try {
         console.log(`[BACKGROUND] Starting try-on generation for moodboard: ${boardId}`);
-        const modelImageUrl = await getApprovedModelUrl();
-        if (!modelImageUrl) {
-            console.error('[BACKGROUND] No approved model images found. Aborting try-on generation.');
-            return;
-        }
-
+        
         const tryOnPromises = products.map(async (product) => {
             try {
+                // Get a random model image for each product individually
+                const modelImageUrl = await getApprovedModelUrl();
+                if (!modelImageUrl) {
+                    console.error(`[BACKGROUND] No approved model images found for product ${product.id}. Using original image.`);
+                    return { productId: product.id, tryOnUrl: product.imageUrl };
+                }
+                
+                console.log(`[BACKGROUND] Using model image ${modelImageUrl} for product ${product.id}`);
                 const url = await generateAndSaveTryOnImage(modelImageUrl, product.imageUrl);
                 return { productId: product.id, tryOnUrl: url };
             } catch (error) {
