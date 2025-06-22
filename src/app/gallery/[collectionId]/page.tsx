@@ -7,44 +7,47 @@ import { ArrowLeft, Heart, ExternalLink, Star, ShoppingBag, Palette, X } from 'l
 import { getMoodboardAccents } from '@/lib/moodboard-backgrounds';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Kalam } from 'next/font/google';
 
-// Generate strategic positions for canvas layout
+const kalam = Kalam({ subsets: ['latin'], weight: ['400', '700'] });
+
+// Generate strategic positions for canvas layout with better spacing
 function generateCanvasPosition(index: number, totalItems: number) {
-  // Create a more natural spread across the canvas
+  // Create a more natural spread across the canvas with better spacing to prevent overlap
   const positions = [
-    // Top row - can now start from top since header is above canvas
-    { top: '5%', left: '8%', width: '22%', rotation: '-3deg', scale: 1.0 },
-    { top: '8%', left: '35%', width: '24%', rotation: '2deg', scale: 1.1 },
-    { top: '3%', left: '62%', width: '20%', rotation: '-1deg', scale: 0.95 },
+    // Top row - improved spacing
+    { top: '5%', left: '8%', width: '20%', rotation: '-3deg', scale: 1.0 },
+    { top: '8%', left: '35%', width: '22%', rotation: '2deg', scale: 1.1 },
+    { top: '3%', left: '65%', width: '18%', rotation: '-1deg', scale: 0.95 },
     
-    // Second row
-    { top: '28%', left: '5%', width: '26%', rotation: '1deg', scale: 1.15 },
-    { top: '32%', left: '35%', width: '22%', rotation: '-2deg', scale: 1.0 },
-    { top: '25%', left: '65%', width: '28%', rotation: '2.5deg', scale: 1.2 },
+    // Second row - better vertical spacing
+    { top: '30%', left: '5%', width: '24%', rotation: '1deg', scale: 1.15 },
+    { top: '34%', left: '37%', width: '20%', rotation: '-2deg', scale: 1.0 },
+    { top: '28%', left: '67%', width: '26%', rotation: '2.5deg', scale: 1.2 },
     
-    // Third row
-    { top: '52%', left: '10%', width: '24%', rotation: '-1deg', scale: 1.05 },
-    { top: '48%', left: '40%', width: '26%', rotation: '1.5deg', scale: 1.1 },
-    { top: '55%', left: '70%', width: '22%', rotation: '-2.5deg', scale: 1.0 },
+    // Third row - improved spacing
+    { top: '58%', left: '10%', width: '22%', rotation: '-1deg', scale: 1.05 },
+    { top: '55%', left: '42%', width: '24%', rotation: '1.5deg', scale: 1.1 },
+    { top: '62%', left: '72%', width: '20%', rotation: '-2.5deg', scale: 1.0 },
     
-    // Fourth row
-    { top: '75%', left: '8%', width: '25%', rotation: '2deg', scale: 1.08 },
-    { top: '72%', left: '38%', width: '23%', rotation: '-1deg', scale: 1.0 },
-    { top: '78%', left: '68%', width: '27%', rotation: '1deg', scale: 1.15 },
+    // Fourth row - better spacing
+    { top: '82%', left: '8%', width: '23%', rotation: '2deg', scale: 1.08 },
+    { top: '79%', left: '40%', width: '21%', rotation: '-1deg', scale: 1.0 },
+    { top: '85%', left: '70%', width: '25%', rotation: '1deg', scale: 1.15 },
   ];
   
-  // If we have more items than predefined positions, generate them algorithmically
+  // If we have more items than predefined positions, generate them algorithmically with better spacing
   if (index >= positions.length) {
     const extraIndex = index - positions.length;
-    const rowHeight = 110; // Start below the predefined positions
-    const itemsPerRow = 3; // Fewer items per row since they're bigger
+    const rowHeight = 115; // Start below the predefined positions with more space
+    const itemsPerRow = 3; // Fewer items per row to prevent overlap
     const row = Math.floor(extraIndex / itemsPerRow);
     const col = extraIndex % itemsPerRow;
     
     return {
-      top: `${rowHeight + (row * 25)}%`,
-      left: `${8 + (col * 30)}%`,
-      width: `${22 + (Math.random() * 8)}%`, // Random width between 22-30%
+      top: `${rowHeight + (row * 28)}%`, // More vertical spacing
+      left: `${8 + (col * 32)}%`, // More horizontal spacing
+      width: `${20 + (Math.random() * 6)}%`, // Slightly smaller random width between 20-26%
       rotation: `${(Math.random() - 0.5) * 6}deg`, // Random rotation -3 to 3 degrees
       scale: 1.0 + (Math.random() * 0.25), // Random scale 1.0 to 1.25
     };
@@ -53,12 +56,86 @@ function generateCanvasPosition(index: number, totalItems: number) {
   return positions[index];
 }
 
+// Generate random tape placement for each item
+function generateTapeElements(itemId: string) {
+  // Use item ID to ensure consistent tape placement per item
+  const seed = itemId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const random = (index: number) => {
+    return ((seed * (index + 1) * 9301 + 49297) % 233280) / 233280;
+  };
+  
+  const tapeCount = Math.floor(random(0) * 3) + 2; // 2-4 pieces of tape
+  const tapes = [];
+  
+  // Ensure even distribution of tape on different sides
+  const sides = [0, 1, 2, 3]; // top, right, bottom, left
+  const shuffledSides = sides.sort(() => random(10) - 0.5);
+  
+  for (let i = 0; i < tapeCount; i++) {
+    const side = shuffledSides[i % 4]; // distribute evenly across sides
+    // Better spacing to avoid overlap - divide each side into segments
+    const segmentSize = 80 / Math.ceil(tapeCount / 4);
+    const segmentIndex = Math.floor(i / 4);
+    const basePosition = 10 + (segmentIndex * segmentSize) + (random(i + 2) * segmentSize * 0.6);
+    const position = Math.min(90, Math.max(10, basePosition)); // keep within 10-90%
+    const rotation = (random(i + 3) - 0.5) * 30; // -15 to 15 degrees
+    const length = (random(i + 4) * 30 + 25) * 1.3; // 30% longer: 32.5-71.5px length
+    
+    let style = {};
+    let className = 'absolute bg-gray-600 border border-gray-700 shadow-md opacity-30 z-10';
+    
+    switch (side) {
+      case 0: // top
+        style = {
+          top: '-8px', // closer to card
+          left: `${position}%`,
+          width: `${length}px`,
+          height: '16px',
+          transform: `translateX(-50%) rotate(${rotation}deg)`,
+        };
+        break;
+      case 1: // right
+        style = {
+          right: '-8px', // closer to card
+          top: `${position}%`,
+          width: '16px',
+          height: `${length}px`,
+          transform: `translateY(-50%) rotate(${rotation}deg)`,
+        };
+        break;
+      case 2: // bottom
+        style = {
+          bottom: '-8px', // closer to card
+          left: `${position}%`,
+          width: `${length}px`,
+          height: '16px',
+          transform: `translateX(-50%) rotate(${rotation}deg)`,
+        };
+        break;
+      case 3: // left
+        style = {
+          left: '-8px', // closer to card
+          top: `${position}%`,
+          width: '16px',
+          height: `${length}px`,
+          transform: `translateY(-50%) rotate(${rotation}deg)`,
+        };
+        break;
+    }
+    
+    tapes.push({ style, className });
+  }
+  
+  return tapes;
+}
+
 // Product card component for collection detail view
 function MoodboardProductCard({ item, boardId, position }: { item: MoodboardItem; boardId: string; position: any }) {
   const { removeMoodboardItem } = useAppStore();
   const [isHovered, setIsHovered] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const displayUrl = isHovered ? item.imageUrl : item.tryOnUrl;
+  const tapeElements = generateTapeElements(item.id);
 
   const handleDeleteItem = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -89,7 +166,15 @@ function MoodboardProductCard({ item, boardId, position }: { item: MoodboardItem
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative bg-white rounded-lg shadow-lg hover:shadow-2xl transition-all duration-500 border-2 border-white overflow-hidden h-full group-hover:scale-105 group-hover:rotate-0 group-hover:!z-[100]">
+      {/* Tape elements - positioned outside card to extend beyond boundaries */}
+      {tapeElements.map((tape, idx) => (
+        <div
+          key={idx}
+          className={tape.className}
+          style={tape.style}
+        />
+      ))}
+      <div className="relative bg-white shadow-lg hover:shadow-2xl transition-all duration-500 border-4 border-white overflow-hidden h-full group-hover:scale-105 group-hover:rotate-0 group-hover:!z-[100]">
         <div className="relative h-full overflow-hidden bg-gray-50">
           <AnimatePresence mode="wait">
             <motion.img
@@ -137,7 +222,7 @@ function MoodboardProductCard({ item, boardId, position }: { item: MoodboardItem
           </div>
 
           {item.price && (
-            <div className="absolute top-8 left-2 bg-black text-white px-2 py-1 rounded-md text-xs font-medium">
+            <div className="absolute bottom-2 left-2 bg-black text-white px-2 py-1 rounded-md text-xs font-medium">
               {item.price}
             </div>
           )}
@@ -269,7 +354,7 @@ export default function MoodboardDetailPage() {
                 <Palette className="w-4 h-4 text-gray-600" />
                 <span className="text-sm text-gray-600">Moodboard</span>
               </div>
-              <h1 className="text-xl font-medium text-black">
+              <h1 className={`text-2xl font-bold text-black ${kalam.className}`} style={{fontFamily: 'Kalam, cursive'}}>
                 {moodboard.title}
               </h1>
               <p className="text-sm text-gray-600 max-w-md">
@@ -284,26 +369,21 @@ export default function MoodboardDetailPage() {
           </div>
         </div>
 
-        {/* Canvas-style moodboard layout */}
-        <div className="relative min-h-screen w-full bg-gradient-to-br from-amber-50 to-yellow-50"
+        {/* Canvas-style moodboard layout with light cream background */}
+        <div className="relative min-h-screen w-full" 
              style={{
+               backgroundColor: '#FEFCF9',
                backgroundImage: `
-                 linear-gradient(90deg, rgba(147, 197, 253, 0.3) 1px, transparent 1px),
-                 linear-gradient(rgba(147, 197, 253, 0.3) 1px, transparent 1px),
-                 radial-gradient(circle at 20% 30%, rgba(139, 69, 19, 0.03) 1px, transparent 1px),
-                 radial-gradient(circle at 80% 70%, rgba(139, 69, 19, 0.03) 1px, transparent 1px),
-                 radial-gradient(circle at 40% 80%, rgba(139, 69, 19, 0.02) 1px, transparent 1px)
+                 radial-gradient(circle at 20% 30%, rgba(139, 69, 19, 0.02) 1px, transparent 1px),
+                 radial-gradient(circle at 80% 70%, rgba(139, 69, 19, 0.02) 1px, transparent 1px),
+                 radial-gradient(circle at 40% 80%, rgba(139, 69, 19, 0.01) 1px, transparent 1px)
                `,
                backgroundSize: `
-                 24px 24px,
-                 24px 24px,
                  80px 80px,
                  120px 120px,
                  60px 60px
                `,
                backgroundPosition: `
-                 0 0,
-                 0 0,
                  0 0,
                  40px 40px,
                  20px 20px
