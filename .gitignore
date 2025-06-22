@@ -106,4 +106,4 @@ temp/
 
 # Development file uploads and data
 /public/uploads/
-/data/
+data/model-images.json
