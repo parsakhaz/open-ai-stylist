@@ -3,8 +3,9 @@
 import { useEffect } from 'react';
 import { useAppStore } from './store/useAppStore';
 import './globals.css';
-import Link from 'next/link';
 import { Inter } from 'next/font/google';
+import { FloatingNav } from '@/components/aceternity/floating-nav';
+import { Home, Bot, Image, GalleryHorizontal } from 'lucide-react';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -20,6 +21,13 @@ export default function RootLayout({
     loadProductCatalog();
   }, [loadProductCatalog]);
 
+  const navItems = [
+    { name: "Home", link: "/", icon: <Home className="h-4 w-4 text-neutral-500 dark:text-white" /> },
+    { name: "My Model", link: "/onboarding", icon: <Image className="h-4 w-4 text-neutral-500 dark:text-white" /> },
+    { name: "Chat", link: "/chat", icon: <Bot className="h-4 w-4 text-neutral-500 dark:text-white" /> },
+    { name: "Gallery", link: "/gallery", icon: <GalleryHorizontal className="h-4 w-4 text-neutral-500 dark:text-white" /> },
+  ];
+
   return (
     <html lang="en">
       <body className={inter.className}>
@@ -28,16 +36,9 @@ export default function RootLayout({
             <div className="text-white text-xl animate-pulse">Generating Style...</div>
           </div>
         )}
-        <nav className="bg-white border-b p-4">
-          <div className="container mx-auto flex justify-between items-center">
-            <Link href="/" className="font-bold text-xl">AI Fashion</Link>
-            <div className="space-x-4">
-              <Link href="/onboarding" className="text-gray-600 hover:text-indigo-600">My Model</Link>
-              <Link href="/chat" className="text-gray-600 hover:text-indigo-600">Chat</Link>
-              <Link href="/gallery" className="text-gray-600 hover:text-indigo-600">Gallery</Link>
-            </div>
-          </div>
-        </nav>
+        
+        <FloatingNav navItems={navItems} />
+        
         <main>{children}</main>
       </body>
     </html>

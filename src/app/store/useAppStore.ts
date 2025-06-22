@@ -8,6 +8,13 @@ export interface ModelImage { id: number; url: string; status: 'validating' | 'a
 export interface MoodboardItem extends Product { tryOnUrl: string; }
 export interface Moodboard { id: string; title: string; description: string; items: MoodboardItem[]; }
 
+// Interface for a chat session summary
+export interface ChatSession {
+  id: string;
+  title: string;
+  createdAt: Date;
+}
+
 interface AppState {
   modelImages: ModelImage[];
   approvedModelImageUrls: string[];
@@ -15,6 +22,11 @@ interface AppState {
   selectedProducts: Product[];
   moodboards: Moodboard[];
   isLoading: boolean;
+  
+  // Chat session management
+  chatSessions: ChatSession[];
+  activeChatId: string | null;
+  
   setIsLoading: (status: boolean) => void;
   loadProductCatalog: () => Promise<void>;
   loadModelImages: () => Promise<void>;
@@ -24,6 +36,11 @@ interface AppState {
   toggleProductSelection: (product: Product) => void;
   clearSelectedProducts: () => void;
   createOrUpdateMoodboard: (title: string, description: string, action: 'CREATE_NEW' | 'ADD_TO_EXISTING', itemsToAdd: Product[], tryOnUrlMap: Record<string, string>) => void;
+  
+  // New chat management actions
+  addChatSession: (id: string) => void;
+  setChatTitle: (id: string, title: string) => void;
+  setActiveChatId: (id: string | null) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -35,6 +52,11 @@ export const useAppStore = create<AppState>()(
       selectedProducts: [],
       moodboards: [],
       isLoading: false,
+      
+      // Initialize chat sessions
+      chatSessions: [],
+      activeChatId: null,
+      
       setIsLoading: (status) => set({ isLoading: status }),
       loadProductCatalog: async () => {
         if (get().productCatalog.length > 0) return;
@@ -138,7 +160,26 @@ export const useAppStore = create<AppState>()(
             };
           }
         });
-      }
+      },
+      
+      // --- NEW ACTIONS FOR CHAT MANAGEMENT ---
+      addChatSession: (id) => {
+        const newSession: ChatSession = { id, title: 'New Chat', createdAt: new Date() };
+        set(state => ({ 
+          chatSessions: [...state.chatSessions, newSession],
+          activeChatId: id,
+        }));
+      },
+
+      setChatTitle: (id, title) => {
+        set(state => ({
+          chatSessions: state.chatSessions.map(session => 
+            session.id === id ? { ...session, title } : session
+          )
+        }));
+      },
+      
+      setActiveChatId: (id) => set({ activeChatId: id }),
     }),
     {
       name: 'ai-fashion-storage',
@@ -147,6 +188,8 @@ export const useAppStore = create<AppState>()(
           approvedModelImageUrls: state.approvedModelImageUrls,
           selectedProducts: state.selectedProducts,
           moodboards: state.moodboards,
+          chatSessions: state.chatSessions, // Persist the chat list
+          activeChatId: state.activeChatId,
       }),
     }
   )
