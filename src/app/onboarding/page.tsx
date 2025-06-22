@@ -24,6 +24,7 @@ export default function OnboardingPage() {
   
   const [deletingImageId, setDeletingImageId] = useState<number | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isChillMode, setIsChillMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -72,6 +73,7 @@ export default function OnboardingPage() {
       const placeholderId = addPlaceholderImage(URL.createObjectURL(convertedFile));
       const formData = new FormData();
       formData.append('image', convertedFile);
+      formData.append('chillMode', isChillMode.toString());
 
       try {
         const response = await fetch('/api/validate-image', {
@@ -273,7 +275,7 @@ export default function OnboardingPage() {
               </h1>
 
               {/* Rules Section */}
-              <div className="grid grid-cols-3 gap-6 mb-8">
+              <div className={`${isChillMode ? 'grid-cols-2' : 'grid-cols-3'} grid gap-6 mb-8`}>
                 {/* Full-Body Images Rule */}
                 <div className="text-center">
                   <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -285,27 +287,29 @@ export default function OnboardingPage() {
                   </p>
                 </div>
 
-                {/* Rule 2 */}
+                {/* Single Person Rule */}
                 <div className="text-center">
                   <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
                     <Info className="w-6 h-6 text-gray-600" />
                   </div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Simple Clothing</h3>
+                  <h3 className="font-semibold text-gray-900 mb-2">Single Person</h3>
                   <p className="text-xs text-gray-500 leading-relaxed">
-                    Must be a picture of one person wearing simple, form-fitting clothing (e.g., t-shirt and leggings), not baggy clothes or multiple layers.
+                    Must contain exactly one person, no other people in the image.
                   </p>
                 </div>
 
-                {/* Rule 3 */}
-                <div className="text-center">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <Info className="w-6 h-6 text-gray-600" />
+                {/* Strict Mode Only Rules */}
+                {!isChillMode && (
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Info className="w-6 h-6 text-gray-600" />
+                    </div>
+                    <h3 className="font-semibold text-gray-900 mb-2">Simple Clothing</h3>
+                    <p className="text-xs text-gray-500 leading-relaxed">
+                      Must be wearing simple, form-fitting clothing (e.g., t-shirt and leggings), not baggy clothes or multiple layers.
+                    </p>
                   </div>
-                  <h3 className="font-semibold text-gray-900 mb-2">No People</h3>
-                  <p className="text-xs text-gray-500 leading-relaxed">
-                    Must not contain any other people.
-                  </p>
-                </div>
+                )}
               </div>
 
               {/* Photo Upload Grid */}
@@ -367,6 +371,38 @@ export default function OnboardingPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Chill Mode Toggle */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <Info className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-900">Chill Mode</h3>
+                      <p className="text-sm text-gray-600">
+                        {isChillMode 
+                          ? "Less strict validation - just needs a single person full body shot" 
+                          : "Strict validation - requires simple clothing and specific pose"
+                        }
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsChillMode(!isChillMode)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      isChillMode ? 'bg-blue-600' : 'bg-gray-300'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        isChillMode ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
               </div>
 
               {/* Photo Counter */}

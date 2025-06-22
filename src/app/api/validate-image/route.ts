@@ -63,6 +63,8 @@ export async function POST(req: Request) {
 
     const formData = await req.formData();
     const imageFile = formData.get('image') as File | null;
+    const chillMode = formData.get('chillMode') === 'true';
+    
     if (!imageFile) {
       return NextResponse.json({ reason: 'No image file provided.' }, { status: 400 });
     }
@@ -75,6 +77,12 @@ export async function POST(req: Request) {
 
     // 2. Prepare the exact payload the Llama API needs for multimodal requests
     const dataUrl = `data:${imageFile.type};base64,${buffer.toString('base64')}`;
+    
+    // Choose prompt based on chill mode
+    const validationPrompt = chillMode
+      ? `You are an AI judge. Analyze this image to see if it's suitable for a virtual fashion try-on. The image should contain exactly one person, fully visible from head to toe. That's it - just needs to be a single person full body shot. Your response MUST be a valid JSON object with this exact structure: {"approved": true/false, "reason": "5-7 word explanation"}. Do not include any other text, explanations, or formatting. Only return the JSON object.`
+      : `You are an AI judge. Analyze this image to see if it's suitable for a virtual fashion try-on. The image MUST contain exactly one person, fully visible from head to toe. The person should be wearing simple, form-fitting clothing (e.g., t-shirt and leggings), not baggy clothes or multiple layers. Your response MUST be a valid JSON object with this exact structure: {"approved": true/false, "reason": "5-7 word explanation"}. Do not include any other text, explanations, or formatting. Only return the JSON object.`;
+    
     const llamaRequestPayload = {
       model: "Llama-4-Maverick-17B-128E-Instruct-FP8",
       messages: [
@@ -83,7 +91,7 @@ export async function POST(req: Request) {
           content: [
             {
               type: "text",
-              text: `You are an AI judge. Analyze this image to see if it's suitable for a virtual fashion try-on. The image MUST contain exactly one person, fully visible from head to toe. The person should be wearing simple, form-fitting clothing (e.g., t-shirt and leggings), not baggy clothes or multiple layers. Your response MUST be a valid JSON object with this exact structure: {"approved": true/false, "reason": "5-7 word explanation"}. Do not include any other text, explanations, or formatting. Only return the JSON object.`,
+              text: validationPrompt,
             },
             {
               type: "image_url",

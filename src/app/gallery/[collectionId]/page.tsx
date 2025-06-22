@@ -140,7 +140,7 @@ function generateTapeElements(itemId: string) {
     const rotation = (random(i + 3) - 0.5) * 30; // -15 to 15 degrees
     const length = (random(i + 4) * 30 + 25) * 1.3 * 1.4; // 40% longer on top of existing 30%: 45.5-100px length
     
-    let style = {
+    let style: React.CSSProperties = {
       backgroundColor: '#CABEA4',
       border: '1px solid #B8AB94',
     };
