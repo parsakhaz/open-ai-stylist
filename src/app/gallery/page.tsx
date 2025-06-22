@@ -1,112 +1,80 @@
 'use client';
 
-import { useAppStore, MoodboardItem } from '../store/useAppStore';
+import { useAppStore } from '../store/useAppStore';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Heart, ExternalLink, Star, Tag, ShoppingBag } from 'lucide-react';
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, Heart, Eye, Tag } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
-// NEW COMPONENT: Encapsulates the hover logic for a single product card
-function MoodboardProductCard({ item }: { item: MoodboardItem }) {
-  const [isHovered, setIsHovered] = useState(false);
-
-  // The default image is the try-on. On hover, it's the original product image.
-  const displayUrl = isHovered ? item.imageUrl : item.tryOnUrl;
-
+// Collection card component
+function CollectionCard({ board, index }: { board: any; index: number }) {
+  const router = useRouter();
+  
+  // Get first 4 items for preview grid
+  const previewItems = board.items.slice(0, 4);
+  
   return (
     <div 
-      className="break-inside-avoid"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      className="group cursor-pointer bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-200 overflow-hidden"
+      onClick={() => router.push(`/gallery/${board.id}`)}
     >
-      <div className="group relative bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-500 border border-gray-200 overflow-hidden">
-        {/* Product image with transition */}
-        <div className="relative aspect-[3/4] overflow-hidden bg-gray-50">
-          <AnimatePresence mode="wait">
-            <motion.img
-              key={displayUrl} // Key change triggers the animation
-              src={displayUrl}
-              alt={item.name}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
-              className="absolute w-full h-full object-cover"
-            />
-          </AnimatePresence>
-
-          {/* Minimal overlay */}
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300"></div>
-          
-          {/* Floating action buttons */}
-          <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
-            <button className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200 hover:scale-110">
-              <Heart className="w-4 h-4 text-gray-700 hover:text-black transition-colors" />
-            </button>
-            <a 
-              href={item.buyLink} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="w-10 h-10 bg-black rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200 hover:scale-110"
-            >
-              <ExternalLink className="w-4 h-4 text-white" />
-            </a>
-          </div>
-
-          {/* Price badge */}
-          {item.price && (
-            <div className="absolute top-4 left-4 bg-black text-white px-3 py-1 rounded-md text-sm font-medium">
-              {item.price}
-            </div>
-          )}
-
-          {/* Prime badge */}
-          {item.isPrime && (
-            <div className="absolute top-4 left-4 mt-10 bg-gray-800 text-white px-2 py-1 rounded text-xs font-medium">
-              prime
-            </div>
-          )}
-        </div>
-
-        {/* Product info */}
-        <div className="p-5">
-          <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 leading-tight">
-            {item.name}
-          </h3>
-          
-          {/* Rating */}
-          {item.rating && item.ratingCount && (
-            <div className="flex items-center gap-2 mb-3">
-              <div className="flex items-center gap-1">
-                <Star className="w-4 h-4 text-gray-400 fill-gray-400" />
-                <span className="text-sm font-medium text-gray-700">{item.rating}</span>
+      {/* Preview grid */}
+      <div className="relative aspect-square bg-gray-50 overflow-hidden">
+        {previewItems.length > 0 ? (
+          <div className="grid grid-cols-2 h-full">
+            {previewItems.map((item, idx) => (
+              <div key={item.id} className="relative overflow-hidden">
+                <img 
+                  src={item.tryOnUrl || item.imageUrl} 
+                  alt={item.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                {idx === 3 && board.items.length > 4 && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <span className="text-white font-medium text-sm">+{board.items.length - 4} more</span>
+                  </div>
+                )}
               </div>
-              <span className="text-xs text-gray-500">({item.ratingCount})</span>
-            </div>
-          )}
-
-          {/* Price info */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-baseline gap-2">
-              {item.price && (
-                <span className="text-lg font-semibold text-black">{item.price}</span>
-              )}
-              {item.originalPrice && (
-                <span className="text-sm text-gray-500 line-through">{item.originalPrice}</span>
-              )}
-            </div>
-            
-            <a 
-              href={item.buyLink} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-black transition-colors"
-            >
-              <ShoppingBag className="w-4 h-4" />
-              Shop
-            </a>
+            ))}
           </div>
+        ) : (
+          <div className="flex items-center justify-center h-full bg-gray-100">
+            <Heart className="w-12 h-12 text-gray-400" />
+          </div>
+        )}
+        
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300"></div>
+        
+        {/* View button */}
+        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
+          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md">
+            <Eye className="w-4 h-4 text-gray-700" />
+          </div>
+        </div>
+        
+        {/* Collection number badge */}
+        <div className="absolute top-4 left-4">
+          <div className="inline-flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-gray-200/50">
+            <Tag className="w-3 h-3 text-gray-600" />
+            <span className="font-medium text-gray-700 text-xs">Collection {index + 1}</span>
+          </div>
+        </div>
+      </div>
+      
+      {/* Collection info */}
+      <div className="p-6">
+        <h3 className="font-semibold text-gray-900 mb-2 text-lg group-hover:text-black transition-colors">
+          {board.title}
+        </h3>
+        <p className="text-gray-600 text-sm line-clamp-2 mb-4 leading-relaxed">
+          {board.description}
+        </p>
+        
+        {/* Stats */}
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-gray-500">{board.items.length} items</span>
+          <span className="text-gray-400 group-hover:text-gray-600 transition-colors">View collection →</span>
         </div>
       </div>
     </div>
@@ -115,6 +83,7 @@ function MoodboardProductCard({ item }: { item: MoodboardItem }) {
 
 export default function GalleryPage() {
   const { moodboards } = useAppStore();
+  const router = useRouter();
 
   if (moodboards.length === 0) {
     return (
@@ -176,36 +145,10 @@ export default function GalleryPage() {
           <div className="w-16 h-px bg-black mx-auto mt-8"></div>
         </div>
 
-        {/* Mood boards grid */}
-        <div className="space-y-20">
+        {/* Collections grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {moodboards.map((board, boardIndex) => (
-            <div key={board.id} className="relative">
-              {/* Board header */}
-              <div className="text-center mb-12">
-                <div className="inline-flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200 mb-6">
-                  <Tag className="w-4 h-4 text-gray-700" />
-                  <span className="font-medium text-gray-700 text-sm">Collection {boardIndex + 1}</span>
-                </div>
-                <h2 className="text-3xl font-light mb-3 text-black tracking-tight">{board.title}</h2>
-                <p className="text-lg text-gray-600 max-w-2xl mx-auto font-light">{board.description}</p>
-              </div>
-
-              {/* Products masonry grid - Updated to use the new MoodboardProductCard component */}
-              <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
-                {board.items.map((item) => (
-                  <MoodboardProductCard key={`${board.id}-${item.id}`} item={item} />
-                ))}
-              </div>
-
-              {/* Board footer */}
-              <div className="text-center mt-12">
-                <div className="inline-flex items-center gap-2 text-sm text-gray-500">
-                  <span>{board.items.length} items</span>
-                  <span>•</span>
-                  <span>Ready to shop</span>
-                </div>
-              </div>
-            </div>
+            <CollectionCard key={board.id} board={board} index={boardIndex} />
           ))}
         </div>
 
