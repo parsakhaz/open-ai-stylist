@@ -135,11 +135,11 @@ export default function OnboardingPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-pink-25 to-purple-50 animate-gradient bg-[length:400%_400%]"></div>
         
         {/* Left Sidebar */}
-        <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-white/95 backdrop-blur-sm border-r border-gray-200 flex flex-col relative z-10 transition-all duration-300`}>
+        <div className={`${isCollapsed ? 'w-12' : 'w-56'} bg-white/95 backdrop-blur-sm border-r border-gray-200 flex flex-col relative z-10 transition-all duration-300`}>
           {/* Header */}
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
-              {!isCollapsed && <img src="/assets/Logobigger.webp" alt="Stylist" className="h-6 sm:h-8 w-auto" />}
+              {!isCollapsed && <img src="/assets/Logobigger.webp" alt="Stylist" className="h-4 sm:h-6 w-auto" />}
               <img 
                 src="/assets/Collapse.svg" 
                 alt="Collapse" 
@@ -153,8 +153,16 @@ export default function OnboardingPage() {
           {!isCollapsed && (
             <div className="p-4">
               <Link href="/chat">
-                <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg py-2 text-sm font-medium">
-                  <img src="/assets/Add.svg" alt="Add" className="w-4 h-4 mr-2 filter brightness-0 invert" />
+                <Button className="w-full bg-black hover:bg-gray-800 text-white rounded-lg py-2 text-sm font-medium flex items-center justify-start">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
+                    <defs>
+                      <linearGradient id="plusGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#9333ea" />
+                        <stop offset="100%" stopColor="#db2777" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M12 5V19M5 12H19" stroke="url(#plusGradient)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
                   Add Moodboard
                 </Button>
               </Link>
@@ -239,7 +247,7 @@ export default function OnboardingPage() {
                   </div>
                   <h3 className="font-semibold text-gray-900 mb-2">Full-Body Images</h3>
                   <p className="text-xs text-gray-500 leading-relaxed">
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                    Must be a picture of a person fully visible from head to toe.
                   </p>
                 </div>
 
@@ -248,9 +256,9 @@ export default function OnboardingPage() {
                   <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
                     <Info className="w-6 h-6 text-gray-600" />
                   </div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Rule</h3>
+                  <h3 className="font-semibold text-gray-900 mb-2">Simple Clothing</h3>
                   <p className="text-xs text-gray-500 leading-relaxed">
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                    Must be a picture of one person wearing simple, form-fitting clothing (e.g., t-shirt and leggings), not baggy clothes or multiple layers.
                   </p>
                 </div>
 
@@ -259,9 +267,9 @@ export default function OnboardingPage() {
                   <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
                     <Info className="w-6 h-6 text-gray-600" />
                   </div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Rule</h3>
+                  <h3 className="font-semibold text-gray-900 mb-2">No People</h3>
                   <p className="text-xs text-gray-500 leading-relaxed">
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                    Must not contain any other people.
                   </p>
                 </div>
               </div>
