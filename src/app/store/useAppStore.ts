@@ -34,6 +34,9 @@ interface AppState {
   moodboards: Moodboard[];
   isLoading: boolean;
   
+  // Auto-Style feature toggle
+  isAutoStyleModeEnabled: boolean;
+  
   // Processing state for background tasks
   processingMoodboards: Set<string>; // Board IDs currently being processed
   completedMoodboards: Set<string>; // Board IDs that just completed processing
@@ -48,8 +51,10 @@ interface AppState {
   addPlaceholderImage: (url: string) => number;
   updatePlaceholderImage: (id: number, finalState: Omit<ModelImage, 'id'>) => void;
   deleteModelImage: (imageUrl: string) => void;
+  toggleAutoStyleMode: () => void;
   toggleProductSelection: (product: Product) => void;
   clearSelectedProducts: () => void;
+  addCompletedMoodboard: (board: Moodboard) => void;
   createOrUpdateMoodboard: (title: string, description: string, action: 'CREATE_NEW' | 'ADD_TO_EXISTING', itemsToAdd: Product[], tryOnUrlMap: Record<string, string>) => string;
   updateMoodboardWithTryOns: (boardId: string, tryOnUrlMap: Record<string, string>, categorization?: any) => void;
   deleteMoodboard: (boardId: string) => void;
@@ -77,6 +82,9 @@ export const useAppStore = create<AppState>()(
       selectedProducts: [],
       moodboards: [],
       isLoading: false,
+      
+      // Initialize Auto-Style mode
+      isAutoStyleModeEnabled: false,
       
       // Initialize processing state
       processingMoodboards: new Set<string>(),
@@ -148,6 +156,9 @@ export const useAppStore = create<AppState>()(
           };
         });
       },
+      toggleAutoStyleMode: () => {
+        set((state) => ({ isAutoStyleModeEnabled: !state.isAutoStyleModeEnabled }));
+      },
       toggleProductSelection: (product) => {
         set((state) => {
           const isSelected = state.selectedProducts.some((p) => p.id === product.id);
@@ -159,6 +170,10 @@ export const useAppStore = create<AppState>()(
         });
       },
       clearSelectedProducts: () => set({ selectedProducts: [] }),
+      addCompletedMoodboard: (board: Moodboard) => {
+        console.log(`[Store] Adding new auto-generated moodboard: ${board.title}`);
+        set(state => ({ moodboards: [...state.moodboards, board] }));
+      },
       createOrUpdateMoodboard: (title, description, action, itemsToAdd, tryOnUrlMap) => {
         let boardId = '';
         const newMoodboardItems: MoodboardItem[] = itemsToAdd.map(product => ({
@@ -312,6 +327,7 @@ export const useAppStore = create<AppState>()(
           approvedModelImageUrls: state.approvedModelImageUrls,
           selectedProducts: state.selectedProducts,
           moodboards: state.moodboards,
+          isAutoStyleModeEnabled: state.isAutoStyleModeEnabled,
           chatSessions: state.chatSessions, // Persist the chat list
           chatMessages: state.chatMessages, // Persist the chat messages
           activeChatId: state.activeChatId,

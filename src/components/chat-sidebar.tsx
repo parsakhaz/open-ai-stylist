@@ -40,11 +40,13 @@ export function ChatSidebar() {
       {/* Header */}
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
-          {!isCollapsed && (
-            <Link href="/" className="flex-shrink-0">
+          <Link href="/" className="flex-shrink-0 hover:opacity-80 transition-opacity">
+            {!isCollapsed ? (
               <img src="/assets/Logobigger.webp" alt="StyleList" className="h-8" />
-            </Link>
-          )}
+            ) : (
+              <img src="/assets/Logo.png" alt="StyleList" className="h-6 w-6" />
+            )}
+          </Link>
           <Button
             variant="ghost"
             size="icon"

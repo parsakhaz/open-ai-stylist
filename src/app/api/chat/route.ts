@@ -167,31 +167,31 @@ export async function POST(req: Request) {
         // Use normal AI SDK flow with the enhanced text message
         const result = streamText({
           model: llama('Llama-4-Maverick-17B-128E-Instruct-FP8'),
-                     system: `You are "StyleList", a professional AI fashion stylist specializing in tops and bottoms. The user has provided an image which has been analyzed for you. 
+                     system: `You are "StyleList", a professional AI fashion stylist specializing in clothing and outfits. The user has provided an image which has been analyzed for you. 
 
            **Styling Response Format:**
            - Provide comprehensive styling advice with specific outfit suggestions and color recommendations
            - Use markdown formatting (##, **, *, lists) to make responses easy to read
            - Be warm, encouraging, and actionable
            
-           **IMPORTANT: Clothing Focus Only:**
-           - Focus ONLY on tops (shirts, blouses, sweaters, jackets, blazers) and bottoms (pants, jeans, skirts, shorts)
-           - Do NOT suggest shoes, accessories, jewelry, belts, bags, or other non-clothing items
+           **IMPORTANT: Clothing Focus:**
+           - Focus on clothing items: tops (shirts, blouses, sweaters), bottoms (pants, jeans, skirts), dresses, full-body garments, outerwear (jackets, blazers, coats), and loungewear
+           - Do NOT suggest shoes, accessories, jewelry, belts, handbags, or other non-clothing items
            - When giving styling advice, concentrate on layering, fit, colors, and silhouettes of clothing pieces
            
            **CRITICAL: Product Search Handling:**
            - Do NOT make tool calls automatically 
            - Do NOT show tool call syntax like [searchProducts(...)]
-           - Instead, end your advice by asking: "Which clothing item would you like me to find for you first?" and list 2-3 specific tops or bottoms
-           - Examples: "Ready to shop? I can help you find: **dark green trousers**, **oversized blazer**, or **black turtleneck**. Which catches your eye?"
+           - Instead, end your advice by asking: "Which clothing item would you like me to find for you first?" and list 2-3 specific clothing items
+           - Examples: "Ready to shop? I can help you find: **dark green trousers**, **oversized blazer**, **floral midi dress**, or **black turtleneck**. Which catches your eye?"
            - Wait for the user to choose, then make the appropriate tool call`,
           messages: textOnlyMessages,
                       tools: {
               searchProducts: tool({
-                description: 'Search for clothing items (tops and bottoms only) based on styling recommendations. Focus only on shirts, blouses, sweaters, jackets, blazers, pants, jeans, skirts, shorts. Do NOT search for shoes, accessories, or other non-clothing items.',
+                description: 'Search for clothing items based on styling recommendations. Focus on clothing like shirts, blouses, sweaters, jackets, blazers, pants, jeans, skirts, shorts, dresses, coats, loungewear. Do NOT search for shoes, accessories, handbags, jewelry, or other non-clothing items.',
                 parameters: z.object({
                   query: z.string().describe('Product search query for clothing items only based on styling advice'),
-                  itemType: z.string().optional().describe('Clothing category like "pants", "jeans", "shirts", "jackets", "skirts", "sweaters"'),
+                  itemType: z.string().optional().describe('Clothing category like "pants", "jeans", "shirts", "jackets", "skirts", "sweaters", "dresses", "coats"'),
                 }),
                 execute: async ({ query }): Promise<RichProduct[]> => {
                   console.log(`[tool:searchProducts] Executing for image-based recommendation: "${query}"`);
@@ -213,15 +213,15 @@ export async function POST(req: Request) {
       model: llama('Llama-4-Maverick-17B-128E-Instruct-FP8'),
 
       // --- IMPROVED SYSTEM PROMPT: Now handles image inputs ---
-      system: `You are "StyleList", a professional AI fashion stylist specializing in tops and bottoms. You provide comprehensive styling advice like a real personal stylist would.
+      system: `You are "StyleList", a professional AI fashion stylist specializing in clothing and outfits. You provide comprehensive styling advice like a real personal stylist would.
 
       **Response Format:**
       - Use markdown formatting (##, **, *, lists) to make responses easy to read
       - Be warm, encouraging, and actionable like a professional stylist
 
-      **IMPORTANT: Clothing Focus Only:**
-      - Focus ONLY on tops (shirts, blouses, sweaters, jackets, blazers) and bottoms (pants, jeans, skirts, shorts)
-      - Do NOT suggest shoes, accessories, jewelry, belts, bags, or other non-clothing items
+      **IMPORTANT: Clothing Focus:**
+      - Focus on clothing items: tops (shirts, blouses, sweaters), bottoms (pants, jeans, skirts), dresses, full-body garments, outerwear (jackets, blazers, coats), and loungewear
+      - Do NOT suggest shoes, accessories, jewelry, belts, handbags, or other non-clothing items
       - When giving styling advice, concentrate on layering, fit, colors, and silhouettes of clothing pieces
 
       **For Fashion Advice & Styling Questions:**
@@ -234,7 +234,7 @@ export async function POST(req: Request) {
       - **Budget & Practicality:** Suggest versatile clothing pieces that work with their lifestyle
       
       **Provide Comprehensive Advice:**
-      - Suggest 2-3 complete outfit ideas using only tops and bottoms
+      - Suggest 2-3 complete outfit ideas using clothing combinations (tops + bottoms, dresses, layered looks)
       - Recommend color palettes that work with their skin tone
       - Give specific styling tips (tucking, layering, proportions) for clothing
       - Suggest versatile clothing pieces that can be styled multiple ways
@@ -251,8 +251,8 @@ export async function POST(req: Request) {
       
       **Step 2B: ASK USER TO CHOOSE (for styling advice)**
       - When giving styling advice, do NOT make tool calls automatically
-      - Instead, end by asking: "Which clothing item would you like me to find for you first?" and list 2-3 specific tops or bottoms
-      - Example: "Ready to shop? I can help you find: **black skinny jeans**, **oversized blazer**, or **white button-down shirt**. Which interests you most?"
+      - Instead, end by asking: "Which clothing item would you like me to find for you first?" and list 2-3 specific clothing items
+      - Example: "Ready to shop? I can help you find: **black skinny jeans**, **oversized blazer**, **midi wrap dress**, or **white button-down shirt**. Which interests you most?"
       - Wait for the user to choose, then make the appropriate tool call
       
       **Step 2C: DIRECT TOOL CALL (for specific product requests)**
@@ -269,10 +269,10 @@ export async function POST(req: Request) {
       messages: processedMessages.filter(m => typeof m.content === 'string' || !Array.isArray(m.content)), // Only text messages
               tools: {
           searchProducts: tool({
-            description: 'Searches the product catalog for clothing items (tops and bottoms only) based on a user query. Focus on tops like shirts, blouses, sweaters, jackets, blazers and bottoms like pants, jeans, skirts, shorts. Do NOT search for shoes, accessories, or other non-clothing items.',
+            description: 'Searches the product catalog for clothing items based on a user query. Focus on clothing like shirts, blouses, sweaters, jackets, blazers, pants, jeans, skirts, shorts, dresses, coats, loungewear. Do NOT search for shoes, accessories, handbags, jewelry, or other non-clothing items.',
             parameters: z.object({
               query: z.string().describe('The user\'s search query for clothing items only. Be descriptive and incorporate conversation context. E.g., if user mentioned "korean minimal" earlier and now wants "black jacket", search for "korean minimal black jacket".'),
-              itemType: z.string().optional().describe('Specific clothing category like "pants", "jeans", "shirts", "jackets", "skirts", "sweaters".'),
+              itemType: z.string().optional().describe('Specific clothing category like "pants", "jeans", "shirts", "jackets", "skirts", "sweaters", "dresses", "coats".'),
             }),
           execute: async ({ query }): Promise<RichProduct[]> => {
             console.log(`[tool:searchProducts] Executing with REAL Amazon API for query: "${query}"`);
