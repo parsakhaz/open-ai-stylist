@@ -170,15 +170,57 @@ export default function OnboardingPage() {
   return (
     <TooltipProvider>
       <div className="min-h-screen relative flex overflow-hidden">
-        {/* Animated Gradient Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-pink-25 to-purple-50 animate-gradient bg-[length:400%_400%]"></div>
+        {/* SVG Gradient Background - Only for main content area */}
+        <div 
+          className="absolute inset-0 overflow-hidden"
+          style={{
+            left: isCollapsed ? '48px' : '224px', // Adjust based on sidebar width
+          }}
+        >
+          <svg 
+            width="100%" 
+            height="100%" 
+            viewBox="0 0 1580 1515" 
+            fill="none" 
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-full h-full object-cover"
+            preserveAspectRatio="xMidYMid slice"
+          >
+            <g filter="url(#filter0_f_68_8252)">
+              <circle cx="604.5" cy="604.5" r="204.5" fill="#9ED5F4"/>
+            </g>
+            <g filter="url(#filter1_f_68_8252)">
+              <circle cx="975.5" cy="655.5" r="204.5" fill="#F9CBE3"/>
+            </g>
+            <g filter="url(#filter2_f_68_8252)">
+              <circle cx="739.5" cy="910.5" r="204.5" fill="#9996CF"/>
+            </g>
+            <defs>
+              <filter id="filter0_f_68_8252" x="0" y="0" width="1209" height="1209" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+                <feFlood floodOpacity="0" result="BackgroundImageFix"/>
+                <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+                <feGaussianBlur stdDeviation="200" result="effect1_foregroundBlur_68_8252"/>
+              </filter>
+              <filter id="filter1_f_68_8252" x="371" y="51" width="1209" height="1209" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+                <feFlood floodOpacity="0" result="BackgroundImageFix"/>
+                <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+                <feGaussianBlur stdDeviation="200" result="effect1_foregroundBlur_68_8252"/>
+              </filter>
+              <filter id="filter2_f_68_8252" x="135" y="306" width="1209" height="1209" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+                <feFlood floodOpacity="0" result="BackgroundImageFix"/>
+                <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+                <feGaussianBlur stdDeviation="200" result="effect1_foregroundBlur_68_8252"/>
+              </filter>
+            </defs>
+          </svg>
+        </div>
         
         {/* Left Sidebar */}
         <div className={`${isCollapsed ? 'w-12' : 'w-56'} bg-white/95 backdrop-blur-sm border-r border-gray-200 flex flex-col relative z-10 transition-all duration-300`}>
           {/* Header */}
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
-              {!isCollapsed && <img src="/assets/Logobigger.webp" alt="Stylist" className="h-4 sm:h-6 w-auto" />}
+              {!isCollapsed && <img src="/assets/Logobigger.webp" alt="Stylist" className="h-5 sm:h-4.5 w-auto" />}
               <img 
                 src="/assets/Collapse.svg" 
                 alt="Collapse" 
@@ -305,7 +347,7 @@ export default function OnboardingPage() {
               {/* Step Indicator */}
               <div className="text-left mb-2">
                 <span className="text-sm font-medium text-black">
-                  <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Step 1</span> out of 3
+                <span className="text-[#7D8FE2] font-bold">Step 1</span> out of 3
                 </span>
               </div>
               
@@ -346,7 +388,7 @@ export default function OnboardingPage() {
                     </div>
                     <h3 className="font-semibold text-gray-900 mb-2">Simple Clothing</h3>
                     <p className="text-xs text-gray-500 leading-relaxed">
-                      Must be wearing simple, form-fitting clothing (e.g., t-shirt and leggings), not baggy clothes or multiple layers.
+                      Must be wearing simple, form-fitting clothing.
                     </p>
                   </div>
                 )}
@@ -412,6 +454,14 @@ export default function OnboardingPage() {
                   </div>
                 ))}
               </div>
+              <div className="text-left mb-6">
+                <span className="text-sm font-bold text-gray-600">
+                  {approvedModelImageUrls.length}/4 photos 
+                </span> <span className="text-sm text-gray-600">
+                  uploaded
+                </span> 
+              </div>
+
 
               {/* Chill Mode Toggle */}
               <div className="mb-6">
@@ -443,13 +493,6 @@ export default function OnboardingPage() {
                     />
                   </button>
                 </div>
-              </div>
-
-              {/* Photo Counter */}
-              <div className="text-left mb-6">
-                <span className="text-sm font-bold text-gray-600">
-                  {approvedModelImageUrls.length}/4 photos uploaded
-                </span>
               </div>
 
               {/* Upload/Continue Button */}

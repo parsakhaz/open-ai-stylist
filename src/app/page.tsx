@@ -40,7 +40,7 @@ export default function HomePage() {
         {/* Start Styling Button */}
         <Link href="/onboarding">
           <Button 
-            className="bg-gray-800 hover:bg-gray-900 text-white px-8 py-3 rounded-lg text-lg font-medium transition-all duration-300"
+          className="bg-gray-800 hover:bg-gray-900 text-white px-3 py-1.5 rounded-lg text-base font-semibold transition-all duration-300"
           >
             Start Styling
           </Button>
