@@ -61,6 +61,8 @@ export default function ChatPage() {
     setIsLoading,
     createOrUpdateMoodboard,
     moodboards,
+    chatSessions,
+    addChatSession,
   } = useAppStore();
   
   const { 
@@ -76,11 +78,8 @@ export default function ChatPage() {
     api: '/api/chat',
     id: chatId,
     onFinish: (message) => {
-      // After the first AI message, set the chat title
-      if (messages.length === 1 && message.role === 'assistant') {
-        const firstLine = message.content.split('\n')[0].substring(0, 50);
-        setChatTitle(chatId, firstLine);
-      }
+      // Chat title is now set immediately when user sends first message
+      // No need to set title here anymore
     },
     onError: (error) => {
       console.error('[useChat] Hook encountered an error:', error);
@@ -88,15 +87,82 @@ export default function ChatPage() {
     },
   });
 
+  // Check if current chat still exists (only redirect if chat was explicitly deleted)
+  useEffect(() => {
+    // Only check for deletion redirect if we have chat sessions and this chat has messages
+    // This prevents redirecting new chats that haven't been added to sidebar yet
+    if (chatSessions.length > 0 && messages.length > 0) {
+      const currentChatExists = chatSessions.some(session => session.id === chatId);
+      if (!currentChatExists) {
+        // Chat was deleted, redirect to new chat
+        router.push('/chat');
+        return;
+      }
+    }
+  }, [chatSessions, chatId, router, messages.length]);
+
   useEffect(() => {
     if (typeof window !== 'undefined' && approvedModelImageUrls.length === 0) {
       router.push('/onboarding');
     }
   }, [approvedModelImageUrls, router]);
 
+  // Helper function to generate meaningful chat titles
+  const generateChatTitle = (content: string): string => {
+    // Clean the content and take first meaningful part
+    const cleanContent = content.trim();
+    
+    // If it's a question, use it as is (truncated)
+    if (cleanContent.endsWith('?')) {
+      return cleanContent.length > 60 ? cleanContent.substring(0, 57) + '...' : cleanContent;
+    }
+    
+    // If it starts with common chat starters, extract the main topic
+    const commonStarters = [
+      'show me', 'find me', 'i need', 'i want', 'help me', 'looking for',
+      'can you', 'what about', 'suggest', 'recommend'
+    ];
+    
+    const lowerContent = cleanContent.toLowerCase();
+    const matchedStarter = commonStarters.find(starter => lowerContent.startsWith(starter));
+    
+    if (matchedStarter) {
+      // Extract the main topic after the starter
+      const topic = cleanContent.substring(matchedStarter.length).trim();
+      if (topic.length > 0) {
+        const capitalizedTopic = topic.charAt(0).toUpperCase() + topic.slice(1);
+        return capitalizedTopic.length > 50 ? capitalizedTopic.substring(0, 47) + '...' : capitalizedTopic;
+      }
+    }
+    
+    // Default: use first 50 characters with proper truncation
+    if (cleanContent.length > 50) {
+      // Try to break at word boundary
+      const truncated = cleanContent.substring(0, 50);
+      const lastSpace = truncated.lastIndexOf(' ');
+      if (lastSpace > 20) {
+        return truncated.substring(0, lastSpace) + '...';
+      }
+      return truncated + '...';
+    }
+    
+    return cleanContent;
+  };
+
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (input.trim()) {
+      // Check if this chat exists in sessions, if not add it (first message)
+      const chatExists = chatSessions.some(session => session.id === chatId);
+      if (!chatExists) {
+        addChatSession(chatId);
+      }
+      
+      // Set chat title immediately when user sends their first message
+      if (messages.length === 0) {
+        const title = generateChatTitle(input);
+        setChatTitle(chatId, title);
+      }
       handleSubmit(e);
     }
   };

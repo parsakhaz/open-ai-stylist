@@ -41,6 +41,7 @@ interface AppState {
   addChatSession: (id: string) => void;
   setChatTitle: (id: string, title: string) => void;
   setActiveChatId: (id: string | null) => void;
+  deleteChatSession: (id: string) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -164,7 +165,7 @@ export const useAppStore = create<AppState>()(
       
       // --- NEW ACTIONS FOR CHAT MANAGEMENT ---
       addChatSession: (id) => {
-        const newSession: ChatSession = { id, title: 'New Chat', createdAt: new Date() };
+        const newSession: ChatSession = { id, title: 'New conversation', createdAt: new Date() };
         set(state => ({ 
           chatSessions: [...state.chatSessions, newSession],
           activeChatId: id,
@@ -180,6 +181,18 @@ export const useAppStore = create<AppState>()(
       },
       
       setActiveChatId: (id) => set({ activeChatId: id }),
+
+      deleteChatSession: (id) => {
+        set(state => {
+          const newChatSessions = state.chatSessions.filter(session => session.id !== id);
+          const newActiveChatId = state.activeChatId === id ? null : state.activeChatId;
+          
+          return {
+            chatSessions: newChatSessions,
+            activeChatId: newActiveChatId,
+          };
+        });
+      },
     }),
     {
       name: 'ai-fashion-storage',
