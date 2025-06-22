@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Copy, RefreshCw, Bot, User, Loader2, Send, Star } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 // This is our new, enhanced ProductDisplay component
 function ProductDisplay({ products, searchQuery }: { products: Product[]; searchQuery?: string }) {
@@ -90,6 +91,7 @@ export default function ChatPage() {
     approvedModelImageUrls,
     setIsLoading,
     createOrUpdateMoodboard,
+    updateMoodboardWithTryOns,
     moodboards,
     chatSessions,
     addChatSession,
@@ -205,45 +207,81 @@ export default function ChatPage() {
     }
   };
 
+  const pollForTryOns = (boardId: string) => {
+    let pollCount = 0;
+    const maxPolls = 120; // 2 minutes max (120 * 1 second)
+    
+    const interval = setInterval(async () => {
+      pollCount++;
+      
+      try {
+        const res = await fetch(`/api/notify-try-on-complete?boardId=${boardId}`);
+        if (!res.ok) {
+          if (pollCount >= maxPolls) {
+            clearInterval(interval);
+            toast.error('Try-on generation timed out. Your moodboard is ready with original images.');
+          }
+          return;
+        }
+
+        const data = await res.json();
+        if (data.status === 'completed') {
+          clearInterval(interval);
+          updateMoodboardWithTryOns(boardId, data.tryOnUrlMap, data.categorization);
+          toast.success('✨ Moodboard upgraded with virtual try-ons!');
+        } else if (pollCount >= maxPolls) {
+          clearInterval(interval);
+          toast.error('Try-on generation timed out. Your moodboard is ready with original images.');
+        }
+      } catch (error) {
+        console.error('Polling failed:', error);
+        if (pollCount >= maxPolls) {
+          clearInterval(interval);
+          toast.error('Try-on generation failed. Your moodboard is ready with original images.');
+        }
+      }
+    }, 1000);
+  };
+  
   const handleCreateBoard = async () => {
     if (selectedProducts.length === 0) return;
-    setIsLoading(true);
+    
+    const initialTryOnMap: Record<string, string> = {};
+    selectedProducts.forEach(p => { initialTryOnMap[p.id] = p.imageUrl; });
+
+    const boardId = createOrUpdateMoodboard(
+        "New Collection...",
+        "Curated by StyleList",
+        "CREATE_NEW",
+        selectedProducts,
+        initialTryOnMap
+    );
+    
+    clearSelectedProducts();
+    toast.success('✅ Moodboard created! Generating try-ons...');
 
     try {
-      const payload = { 
-        selectedProducts,
-        existingMoodboards: moodboards.map(b => ({title: b.title, description: b.description}))
-      };
+        const payload = { 
+            selectedProducts,
+            existingMoodboards: moodboards.map(b => ({ title: b.title, description: b.description })),
+            boardId
+        };
 
-      const response = await fetch('/api/generate-moodboard', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+        const response = await fetch('/api/generate-moodboard', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
 
-      if (!response.ok) {
-        throw new Error('Generate moodboard request failed');
-      }
+        if (response.status !== 202) {
+            throw new Error('Failed to start moodboard generation.');
+        }
 
-      const result = await response.json();
-      if (result.error) throw new Error(result.error);
-      
-      createOrUpdateMoodboard(
-        result.categorization.boardTitle,
-        result.categorization.boardDescription,
-        result.categorization.action,
-        selectedProducts,
-        result.tryOnUrlMap
-      );
-
-      clearSelectedProducts();
-      router.push('/gallery');
+        pollForTryOns(boardId);
 
     } catch (error) {
-      console.error("Failed to create mood board", error);
-      alert("Sorry, something went wrong while creating the mood board.");
-    } finally {
-      setIsLoading(false);
+      console.error("Failed to start mood board generation", error);
+      toast.error("Sorry, something went wrong starting the try-on process.");
     }
   };
 
