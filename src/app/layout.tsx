@@ -7,6 +7,7 @@ import { Inter } from 'next/font/google';
 import { FloatingNav } from '@/components/aceternity/floating-nav';
 import { FashionLoading } from '@/components/fashion-loading';
 import { Home, Bot, Image, GalleryHorizontal } from 'lucide-react';
+import { Toaster } from 'react-hot-toast';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -31,6 +32,17 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         {isLoading && <FashionLoading />}
+        
+        <Toaster 
+          position="bottom-right"
+          toastOptions={{
+            duration: 5000,
+            style: {
+              background: '#333',
+              color: '#fff',
+            },
+          }}
+        />
         
         <FloatingNav navItems={navItems} />
         

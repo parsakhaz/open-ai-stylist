@@ -3,10 +3,13 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 // IMPORT THE CORRECT PRODUCT TYPE FROM OUR CENTRAL STORE
 import { Product } from '@/app/store/useAppStore';
+import { promises as fs } from 'fs';
+import path from 'path';
+import { generateAndSaveTryOnImage } from '@/lib/fashn.service';
 
 console.log('[api/generate-moodboard] Module loaded.');
 
-export const maxDuration = 60; // Allow up to 60 seconds for this complex task
+export const maxDuration = 120; // INCREASE DURATION to allow for multiple API calls
 
 // This is the URL of our Next.js app.
 // It's crucial for server-to-server API calls.
@@ -34,67 +37,89 @@ interface MoodboardSummary {
   description: string;
 }
 
-export async function POST(req: Request) {
-  // LOGGING: Announce the start of the request.
-  console.log('[api/generate-moodboard] Received a request.');
+const MODEL_CONFIG_FILE = path.join(process.cwd(), 'data', 'model-images.json');
 
-  try {
-    const { selectedProducts, existingMoodboards }: { 
-      selectedProducts: Product[], 
-      existingMoodboards: MoodboardSummary[] 
-    } = await req.json();
-
-    // LOGGING: See exactly what the client sent.
-    console.log('[api/generate-moodboard] Request body:', { 
-      selectedProducts: selectedProducts.map(p => p.name), // Log names for brevity
-      existingMoodboards 
-    });
-
-    // LOGGING: Using proxy for Llama API calls
-    console.log(`[api/generate-moodboard] Using Llama proxy base at: ${appURL}/api/v1`);
-
-    // Step 1: MOCK Try-On image generation
-    const tryOnUrlMap: Record<string, string> = {};
-    for (const product of selectedProducts) {
-      // For the POC, we just use the original product image as the "try-on"
-      tryOnUrlMap[product.id] = product.imageUrl;
+async function getApprovedModelUrl(): Promise<string | null> {
+    try {
+        const data = await fs.readFile(MODEL_CONFIG_FILE, 'utf-8');
+        const config = JSON.parse(data);
+        const approvedImages = config.images.filter((img: any) => img.status === 'approved');
+        if (approvedImages.length === 0) return null;
+        const randomIndex = Math.floor(Math.random() * approvedImages.length);
+        return approvedImages[randomIndex].url;
+    } catch (error) {
+        return null;
     }
+}
 
-    // LOGGING: Confirm try-on mapping was created.
-    console.log('[api/generate-moodboard] Created try-on URL map:', tryOnUrlMap);
+async function processTryOnsInBackground(boardId: string, products: Product[], categorization: any) {
+    try {
+        console.log(`[BACKGROUND] Starting try-on generation for moodboard: ${boardId}`);
+        const modelImageUrl = await getApprovedModelUrl();
+        if (!modelImageUrl) {
+            console.error('[BACKGROUND] No approved model images found. Aborting try-on generation.');
+            return;
+        }
 
-    // Step 2: Ask Llama to categorize the selections using generateObject
-    const productDescriptions = selectedProducts.map((p: Product) => p.name).join(', ');
-    const boardSummaries = existingMoodboards.map((b: MoodboardSummary) => `"${b.title}": ${b.description}`).join('; ');
-    const prompt = `A user has selected the following fashion items: "${productDescriptions}". Their existing mood boards are: ${boardSummaries || 'None'}. Analyze the items and decide if they fit an existing board or if a new one should be created.`;
+        const tryOnPromises = products.map(async (product) => {
+            try {
+                const url = await generateAndSaveTryOnImage(modelImageUrl, product.imageUrl);
+                return { productId: product.id, tryOnUrl: url };
+            } catch (error) {
+                console.error(`[BACKGROUND] Failed to generate try-on for product ${product.id}:`, error);
+                return { productId: product.id, tryOnUrl: product.imageUrl };
+            }
+        });
+        
+        const results = await Promise.all(tryOnPromises);
+        const finalTryOnUrlMap: Record<string, string> = {};
+        results.forEach(res => {
+            finalTryOnUrlMap[res.productId] = res.tryOnUrl;
+        });
 
-    // LOGGING: See the exact prompt sent to the AI. This is vital for debugging AI behavior.
-    console.log('[api/generate-moodboard] Prompt for categorization:', prompt);
+        console.log(`[BACKGROUND] Try-ons complete for moodboard: ${boardId}. Notifying client...`);
 
-    const { object: categorizationResult } = await generateObject({
-      // MODIFICATION: Use the correct model name from Meta Llama API docs
-      model: llama('Llama-4-Maverick-17B-128E-Instruct-FP8'),
-      schema: categorizationSchema,
-      system: `You are an AI mood board curator. Your task is to decide how to categorize a user's selected items.`,
-      prompt,
-    });
+        await fetch(`${appURL}/api/notify-try-on-complete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ boardId, tryOnUrlMap: finalTryOnUrlMap, categorization }),
+        });
+    } catch (error) {
+        console.error(`[BACKGROUND] Failed to process try-ons for moodboard ${boardId}:`, error);
+    }
+}
 
-    // LOGGING: See what the AI decided.
-    console.log('[api/generate-moodboard] Received categorization from AI:', categorizationResult);
+export async function POST(req: Request) {
+    try {
+        const { selectedProducts, existingMoodboards, boardId }: { 
+            selectedProducts: Product[], 
+            existingMoodboards: MoodboardSummary[],
+            boardId: string
+        } = await req.json();
 
-    const responsePayload = {
-      categorization: categorizationResult, // This is already a parsed object
-      tryOnUrlMap
-    };
+        const productDescriptions = selectedProducts.map(p => p.name).join(', ');
+        const boardSummaries = existingMoodboards.map(b => `"${b.title}": ${b.description}`).join('; ');
+        const prompt = `A user has selected these items: "${productDescriptions}". Their boards are: ${boardSummaries || 'None'}. Decide if they fit an existing board or need a new one.`;
 
-    // LOGGING: See the final data being sent back to the client.
-    console.log('[api/generate-moodboard] Sending response:', responsePayload);
+        const { object: categorizationResult } = await generateObject({
+            model: llama('Llama-4-Maverick-17B-128E-Instruct-FP8'),
+            schema: categorizationSchema,
+            system: `You are an AI mood board curator. Decide how to categorize a user's selected items.`,
+            prompt,
+        });
 
-    return new Response(JSON.stringify(responsePayload), { headers: { 'Content-Type': 'application/json' } });
+        processTryOnsInBackground(boardId, selectedProducts, categorizationResult);
+        
+        console.log(`[API] Fired off background task for board ${boardId}. Returning immediate response.`);
+        
+        return new Response(JSON.stringify({ categorization: categorizationResult }), { 
+            status: 202,
+            headers: { 'Content-Type': 'application/json' } 
+        });
 
-  } catch (error) {
-    // LOGGING: This is your most important log. It catches all errors in the process.
-    console.error('[api/generate-moodboard] Mood board generation failed:', error);
-    return new Response(JSON.stringify({ error: 'Failed to generate mood board' }), { status: 500 });
-  }
+    } catch (error) {
+        console.error('[api/generate-moodboard] Mood board generation failed:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to generate mood board';
+        return new Response(JSON.stringify({ error: errorMessage }), { status: 500 });
+    }
 } 

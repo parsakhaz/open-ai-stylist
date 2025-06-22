@@ -3,10 +3,149 @@
 import { useAppStore } from '../store/useAppStore';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Heart, ExternalLink, Star, Tag, ShoppingBag } from 'lucide-react';
+import { ArrowRight, Heart, Eye, Palette } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { getMoodboardAccents } from '@/lib/moodboard-backgrounds';
+
+// Moodboard card component with dynamic backgrounds
+function MoodboardCard({ board, index }: { board: any; index: number }) {
+  const router = useRouter();
+  const { background, accents } = getMoodboardAccents(board.id);
+  
+  // Get first 4 items for preview grid
+  const previewItems = board.items.slice(0, 4);
+  
+  return (
+    <div 
+      className="group cursor-pointer bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-200 overflow-hidden"
+      onClick={() => router.push(`/gallery/${board.id}`)}
+    >
+      {/* Dynamic background with preview grid */}
+      <div 
+        className="relative aspect-square overflow-hidden"
+        style={{
+          backgroundColor: background.colors[0],
+          backgroundImage: background.pattern,
+        }}
+      >
+        {/* Strategic accent elements */}
+        {accents.map((accent, idx) => (
+          <div
+            key={idx}
+            className={`absolute pointer-events-none`}
+            style={{
+              left: `${accent.x}%`,
+              top: `${accent.y}%`,
+              transform: `rotate(${accent.rotation}deg)`,
+              opacity: accent.opacity,
+            }}
+          >
+            {accent.type === 'circle' && (
+              <div 
+                className="rounded-full border border-gray-400"
+                style={{ width: accent.size, height: accent.size }}
+              />
+            )}
+            {accent.type === 'line' && (
+              <div 
+                className="bg-gray-400"
+                style={{ width: accent.size, height: 1 }}
+              />
+            )}
+            {accent.type === 'square' && (
+              <div 
+                className="border border-gray-400"
+                style={{ width: accent.size * 0.8, height: accent.size * 0.8 }}
+              />
+            )}
+          </div>
+        ))}
+        
+        {/* Preview items positioned strategically */}
+        {previewItems.length > 0 ? (
+          <div className="absolute inset-4">
+            {previewItems.map((item, idx) => {
+              // Strategic positioning for moodboard feel
+              const positions = [
+                { top: '5%', left: '10%', width: '35%', rotation: '-2deg' },
+                { top: '15%', right: '5%', width: '40%', rotation: '1deg' },
+                { bottom: '20%', left: '5%', width: '38%', rotation: '2deg' },
+                { bottom: '5%', right: '15%', width: '32%', rotation: '-1deg' },
+              ];
+              const pos = positions[idx] || positions[0];
+              
+              return (
+                <div
+                  key={item.id}
+                  className="absolute shadow-md rounded-lg overflow-hidden border-2 border-white group-hover:scale-105 transition-transform duration-500"
+                  style={{
+                    ...pos,
+                    aspectRatio: '3/4',
+                    transform: `rotate(${pos.rotation}) ${idx < 3 ? 'scale(1)' : 'scale(0.85)'}`,
+                    zIndex: 4 - idx,
+                  }}
+                >
+                  <img 
+                    src={item.tryOnUrl || item.imageUrl} 
+                    alt={item.name}
+                    className="w-full h-full object-cover"
+                  />
+                  {idx === 3 && board.items.length > 4 && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                      <span className="text-white font-medium text-xs">+{board.items.length - 4}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <Palette className="w-12 h-12 text-gray-300" />
+          </div>
+        )}
+        
+        {/* Subtle overlay */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all duration-500"></div>
+        
+        {/* View button */}
+        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
+          <div className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg border border-white/50">
+            <Eye className="w-4 h-4 text-gray-700" />
+          </div>
+        </div>
+        
+        {/* Moodboard badge */}
+        <div className="absolute top-4 left-4">
+          <div className="inline-flex items-center gap-2 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-white/50 shadow-sm">
+            <Palette className="w-3 h-3 text-gray-600" />
+            <span className="font-medium text-gray-700 text-xs">Board {index + 1}</span>
+          </div>
+        </div>
+      </div>
+      
+      {/* Moodboard info */}
+      <div className="p-6">
+        <h3 className="font-semibold text-gray-900 mb-2 text-lg group-hover:text-black transition-colors">
+          {board.title}
+        </h3>
+        <p className="text-gray-600 text-sm line-clamp-2 mb-4 leading-relaxed">
+          {board.description}
+        </p>
+        
+        {/* Stats */}
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-gray-500">{board.items.length} pieces</span>
+          <span className="text-gray-400 group-hover:text-gray-600 transition-colors">Open moodboard →</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function GalleryPage() {
   const { moodboards } = useAppStore();
+  const router = useRouter();
 
   if (moodboards.length === 0) {
     return (
@@ -25,10 +164,10 @@ export default function GalleryPage() {
               </div>
             </div>
             <h1 className="text-4xl font-bold mb-4 text-black">
-              No Collections Yet
+              No Moodboards Yet
             </h1>
             <p className="text-gray-600 mb-8 text-lg max-w-md">
-              Start chatting with Chad to discover pieces and create your first collection
+              Start chatting with StyleList to discover pieces and create your first moodboard
             </p>
             <Link href="/chat">
               <Button className="bg-black hover:bg-gray-800 text-white px-8 py-3 rounded-lg text-lg shadow-md hover:shadow-lg transition-all duration-300">
@@ -60,127 +199,18 @@ export default function GalleryPage() {
         {/* Minimal header */}
         <div className="text-center mb-16">
           <h1 className="text-5xl md:text-7xl font-light mb-6 text-black tracking-tight">
-            Collections
+            Moodboards
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto font-light">
-            Your curated fashion collections, organized by style
+            Your curated fashion visions, artfully arranged
           </p>
           <div className="w-16 h-px bg-black mx-auto mt-8"></div>
         </div>
 
-        {/* Mood boards grid */}
-        <div className="space-y-20">
+        {/* Moodboards grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {moodboards.map((board, boardIndex) => (
-            <div key={board.id} className="relative">
-              {/* Board header */}
-              <div className="text-center mb-12">
-                <div className="inline-flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200 mb-6">
-                  <Tag className="w-4 h-4 text-gray-700" />
-                  <span className="font-medium text-gray-700 text-sm">Collection {boardIndex + 1}</span>
-                </div>
-                <h2 className="text-3xl font-light mb-3 text-black tracking-tight">{board.title}</h2>
-                <p className="text-lg text-gray-600 max-w-2xl mx-auto font-light">{board.description}</p>
-              </div>
-
-              {/* Products masonry grid */}
-              <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
-                {board.items.map((item, itemIndex) => (
-                  <div key={`${board.id}-${item.id}`} className="break-inside-avoid">
-                    <div className="group relative bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-500 border border-gray-200 overflow-hidden">
-                      {/* Product image */}
-                      <div className="relative aspect-[3/4] overflow-hidden bg-gray-50">
-                        <img 
-                          src={item.imageUrl} 
-                          alt={item.name} 
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
-                        />
-                        
-                        {/* Minimal overlay */}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300"></div>
-                        
-                        {/* Floating action buttons */}
-                        <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                          <button className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200 hover:scale-110">
-                            <Heart className="w-4 h-4 text-gray-700 hover:text-black transition-colors" />
-                          </button>
-                          <a 
-                            href={item.buyLink} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="w-10 h-10 bg-black rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200 hover:scale-110"
-                          >
-                            <ExternalLink className="w-4 h-4 text-white" />
-                          </a>
-                        </div>
-
-                        {/* Price badge */}
-                        {item.price && (
-                          <div className="absolute top-4 left-4 bg-black text-white px-3 py-1 rounded-md text-sm font-medium">
-                            {item.price}
-                          </div>
-                        )}
-
-                        {/* Prime badge */}
-                        {item.isPrime && (
-                          <div className="absolute top-4 left-4 mt-10 bg-gray-800 text-white px-2 py-1 rounded text-xs font-medium">
-                            prime
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Product info */}
-                      <div className="p-5">
-                        <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 leading-tight">
-                          {item.name}
-                        </h3>
-                        
-                        {/* Rating */}
-                        {item.rating && item.ratingCount && (
-                          <div className="flex items-center gap-2 mb-3">
-                            <div className="flex items-center gap-1">
-                              <Star className="w-4 h-4 text-gray-400 fill-gray-400" />
-                              <span className="text-sm font-medium text-gray-700">{item.rating}</span>
-                            </div>
-                            <span className="text-xs text-gray-500">({item.ratingCount})</span>
-                          </div>
-                        )}
-
-                        {/* Price info */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-baseline gap-2">
-                            {item.price && (
-                              <span className="text-lg font-semibold text-black">{item.price}</span>
-                            )}
-                            {item.originalPrice && (
-                              <span className="text-sm text-gray-500 line-through">{item.originalPrice}</span>
-                            )}
-                          </div>
-                          
-                          <a 
-                            href={item.buyLink} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-black transition-colors"
-                          >
-                            <ShoppingBag className="w-4 h-4" />
-                            Shop
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Board footer */}
-              <div className="text-center mt-12">
-                <div className="inline-flex items-center gap-2 text-sm text-gray-500">
-                  <span>{board.items.length} items</span>
-                  <span>•</span>
-                  <span>Ready to shop</span>
-                </div>
-              </div>
-            </div>
+            <MoodboardCard key={board.id} board={board} index={boardIndex} />
           ))}
         </div>
 
@@ -191,7 +221,7 @@ export default function GalleryPage() {
               Ready for More?
             </h3>
             <p className="text-gray-600 mb-6 text-lg font-light">
-              Chat with Chad to discover new pieces and create more collections
+              Chat with StyleList to discover new pieces and create more moodboards
             </p>
             <Link href="/chat">
               <Button className="bg-black hover:bg-gray-800 text-white px-8 py-3 rounded-lg text-lg shadow-md hover:shadow-lg transition-all duration-300">

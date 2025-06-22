@@ -17,8 +17,8 @@ export interface Product {
   isPrime: boolean;
 }
 export interface ModelImage { id: number; url: string; status: 'validating' | 'approved' | 'failed'; reason?: string; }
-export interface MoodboardItem extends Product { tryOnUrl: string; }
-export interface Moodboard { id: string; title: string; description: string; items: (Product & { tryOnUrl?: string })[]; }
+export interface MoodboardItem extends Product { tryOnUrl?: string; }
+export interface Moodboard { id: string; title: string; description: string; items: MoodboardItem[]; }
 
 // Interface for a chat session summary
 export interface ChatSession {
@@ -46,7 +46,8 @@ interface AppState {
   deleteModelImage: (imageUrl: string) => void;
   toggleProductSelection: (product: Product) => void;
   clearSelectedProducts: () => void;
-  createOrUpdateMoodboard: (title: string, description: string, action: 'CREATE_NEW' | 'ADD_TO_EXISTING', itemsToAdd: Product[], tryOnUrlMap: Record<string, string>) => void;
+  createOrUpdateMoodboard: (title: string, description: string, action: 'CREATE_NEW' | 'ADD_TO_EXISTING', itemsToAdd: Product[], tryOnUrlMap: Record<string, string>) => string;
+  updateMoodboardWithTryOns: (boardId: string, tryOnUrlMap: Record<string, string>, categorization?: any) => void;
   
   // New chat management actions
   addChatSession: (id: string) => void;
@@ -143,21 +144,26 @@ export const useAppStore = create<AppState>()(
       },
       clearSelectedProducts: () => set({ selectedProducts: [] }),
       createOrUpdateMoodboard: (title, description, action, itemsToAdd, tryOnUrlMap) => {
-        const newMoodboardItems = itemsToAdd.map(product => ({
+        let boardId = '';
+        const newMoodboardItems: MoodboardItem[] = itemsToAdd.map(product => ({
           ...product,
           tryOnUrl: tryOnUrlMap[product.id]
         }));
 
         set(state => {
           if (action === 'CREATE_NEW') {
+            const newId = uuidv4();
+            boardId = newId;
             const newMoodboard: Moodboard = {
-              id: uuidv4(),
+              id: newId,
               title,
               description,
               items: newMoodboardItems,
             };
             return { moodboards: [...state.moodboards, newMoodboard] };
           } else { // ADD_TO_EXISTING
+            const existingBoard = state.moodboards.find(b => b.title === title);
+            boardId = existingBoard?.id || '';
             return {
               moodboards: state.moodboards.map(board => 
                 board.title === title 
@@ -167,6 +173,31 @@ export const useAppStore = create<AppState>()(
             };
           }
         });
+        return boardId;
+      },
+      
+      updateMoodboardWithTryOns: (boardId, tryOnUrlMap, categorization) => {
+        set(state => ({
+          moodboards: state.moodboards.map(board => {
+            if (board.id !== boardId) {
+              return board;
+            }
+            const updatedItems = board.items.map(item => ({
+              ...item,
+              tryOnUrl: tryOnUrlMap[item.id] || item.tryOnUrl,
+            }));
+            return { 
+              ...board, 
+              items: updatedItems,
+              // Update title and description if categorization is provided
+              ...(categorization && {
+                title: categorization.boardTitle,
+                description: categorization.boardDescription
+              })
+            };
+          })
+        }));
+        console.log(`[Store] Upgraded moodboard ${boardId} with new try-on images and categorization.`);
       },
       
       // --- NEW ACTIONS FOR CHAT MANAGEMENT ---
