@@ -48,6 +48,9 @@ interface AppState {
   clearSelectedProducts: () => void;
   createOrUpdateMoodboard: (title: string, description: string, action: 'CREATE_NEW' | 'ADD_TO_EXISTING', itemsToAdd: Product[], tryOnUrlMap: Record<string, string>) => string;
   updateMoodboardWithTryOns: (boardId: string, tryOnUrlMap: Record<string, string>, categorization?: any) => void;
+  deleteMoodboard: (boardId: string) => void;
+  deleteAllMoodboards: () => void;
+  removeMoodboardItem: (boardId: string, itemId: string) => void;
   
   // New chat management actions
   addChatSession: (id: string) => void;
@@ -198,6 +201,29 @@ export const useAppStore = create<AppState>()(
           })
         }));
         console.log(`[Store] Upgraded moodboard ${boardId} with new try-on images and categorization.`);
+      },
+
+      deleteMoodboard: (boardId) => {
+        console.log(`[Store] Deleting moodboard with ID: ${boardId}`);
+        set(state => ({
+          moodboards: state.moodboards.filter(board => board.id !== boardId)
+        }));
+      },
+
+      deleteAllMoodboards: () => {
+        console.log('[Store] Deleting all moodboards');
+        set({ moodboards: [] });
+      },
+
+      removeMoodboardItem: (boardId, itemId) => {
+        console.log(`[Store] Removing item ${itemId} from moodboard ${boardId}`);
+        set(state => ({
+          moodboards: state.moodboards.map(board => 
+            board.id === boardId
+              ? { ...board, items: board.items.filter(item => item.id !== itemId) }
+              : board
+          )
+        }));
       },
       
       // --- NEW ACTIONS FOR CHAT MANAGEMENT ---

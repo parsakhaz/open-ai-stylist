@@ -3,21 +3,41 @@
 import { useAppStore } from '../store/useAppStore';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Heart, Eye, Palette } from 'lucide-react';
+import { ArrowRight, Heart, Eye, Palette, Trash2, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { getMoodboardAccents } from '@/lib/moodboard-backgrounds';
 
 // Moodboard card component with dynamic backgrounds
 function MoodboardCard({ board, index }: { board: any; index: number }) {
   const router = useRouter();
+  const { deleteMoodboard } = useAppStore();
   const { background, accents } = getMoodboardAccents(board.id);
+  const [isDeletingBoard, setIsDeletingBoard] = useState(false);
   
   // Get first 4 items for preview grid
   const previewItems = board.items.slice(0, 4);
+
+  const handleDeleteBoard = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (confirm(`Are you sure you want to delete "${board.title}"?`)) {
+      setIsDeletingBoard(true);
+      try {
+        deleteMoodboard(board.id);
+      } catch (error) {
+        console.error('Delete failed:', error);
+        alert('Failed to delete moodboard');
+      } finally {
+        setIsDeletingBoard(false);
+      }
+    }
+  };
   
   return (
     <div 
-      className="group cursor-pointer bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-200 overflow-hidden"
+      className="group cursor-pointer bg-white/95 backdrop-blur-sm rounded-xl shadow-md hover:shadow-2xl transition-all duration-500 border border-amber-200/30 overflow-hidden hover:border-amber-300/50"
       onClick={() => router.push(`/gallery/${board.id}`)}
     >
       {/* Dynamic background with preview grid */}
@@ -108,6 +128,22 @@ function MoodboardCard({ board, index }: { board: any; index: number }) {
         {/* Subtle overlay */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all duration-500"></div>
         
+        {/* Delete button */}
+        <div className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
+          <Button
+            variant="secondary"
+            size="icon"
+            className="h-8 w-8 bg-black hover:bg-red-600 text-white border-0 shadow-lg p-0 rounded-full"
+            onClick={handleDeleteBoard}
+            disabled={isDeletingBoard}
+          >
+            {isDeletingBoard ? 
+              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" /> : 
+              <X className="h-3 w-3" />
+            }
+          </Button>
+        </div>
+
         {/* View button */}
         <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
           <div className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg border border-white/50">
@@ -116,7 +152,7 @@ function MoodboardCard({ board, index }: { board: any; index: number }) {
         </div>
         
         {/* Moodboard badge */}
-        <div className="absolute top-4 left-4">
+        <div className="absolute bottom-4 left-4">
           <div className="inline-flex items-center gap-2 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-white/50 shadow-sm">
             <Palette className="w-3 h-3 text-gray-600" />
             <span className="font-medium text-gray-700 text-xs">Board {index + 1}</span>
@@ -144,14 +180,52 @@ function MoodboardCard({ board, index }: { board: any; index: number }) {
 }
 
 export default function GalleryPage() {
-  const { moodboards } = useAppStore();
+  const { moodboards, deleteAllMoodboards } = useAppStore();
   const router = useRouter();
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
+
+  const handleDeleteAll = async () => {
+    if (confirm(`Are you sure you want to delete all ${moodboards.length} moodboards? This action cannot be undone.`)) {
+      setIsDeletingAll(true);
+      try {
+        deleteAllMoodboards();
+      } catch (error) {
+        console.error('Delete all failed:', error);
+        alert('Failed to delete all moodboards');
+      } finally {
+        setIsDeletingAll(false);
+      }
+    }
+  };
 
   if (moodboards.length === 0) {
     return (
-      <div className="min-h-full bg-white/80 backdrop-blur-sm">
+      <div className="min-h-full bg-gradient-to-br from-amber-50 to-yellow-50"
+           style={{
+             backgroundImage: `
+               linear-gradient(90deg, rgba(147, 197, 253, 0.2) 1px, transparent 1px),
+               linear-gradient(rgba(147, 197, 253, 0.2) 1px, transparent 1px),
+               radial-gradient(circle at 20% 30%, rgba(139, 69, 19, 0.02) 1px, transparent 1px),
+               radial-gradient(circle at 80% 70%, rgba(139, 69, 19, 0.02) 1px, transparent 1px),
+               radial-gradient(circle at 40% 80%, rgba(139, 69, 19, 0.015) 1px, transparent 1px)
+             `,
+             backgroundSize: `
+               32px 32px,
+               32px 32px,
+               80px 80px,
+               120px 120px,
+               60px 60px
+             `,
+             backgroundPosition: `
+               0 0,
+               0 0,
+               0 0,
+               40px 40px,
+               20px 20px
+             `
+           }}>
         <div className="flex flex-col items-center justify-center min-h-full text-center px-4 py-12">
-          <div className="bg-white/90 backdrop-blur-sm border border-white/50 rounded-2xl p-12 shadow-lg">
+          <div className="bg-white/95 backdrop-blur-sm border border-amber-200/50 rounded-2xl p-12 shadow-lg">
             <div className="mb-8 relative">
               <div className="w-24 h-24 mx-auto bg-black rounded-full flex items-center justify-center">
                 <Heart className="w-12 h-12 text-white" fill="currentColor" />
@@ -175,17 +249,50 @@ export default function GalleryPage() {
   }
 
   return (
-    <div className="min-h-full bg-white/80 backdrop-blur-sm">
+    <div className="min-h-full bg-gradient-to-br from-amber-50 to-yellow-50"
+         style={{
+           backgroundImage: `
+             linear-gradient(90deg, rgba(147, 197, 253, 0.2) 1px, transparent 1px),
+             linear-gradient(rgba(147, 197, 253, 0.2) 1px, transparent 1px),
+             radial-gradient(circle at 20% 30%, rgba(139, 69, 19, 0.02) 1px, transparent 1px),
+             radial-gradient(circle at 80% 70%, rgba(139, 69, 19, 0.02) 1px, transparent 1px),
+             radial-gradient(circle at 40% 80%, rgba(139, 69, 19, 0.015) 1px, transparent 1px)
+           `,
+           backgroundSize: `
+             32px 32px,
+             32px 32px,
+             80px 80px,
+             120px 120px,
+             60px 60px
+           `,
+           backgroundPosition: `
+             0 0,
+             0 0,
+             0 0,
+             40px 40px,
+             20px 20px
+           `
+         }}>
       <div className="container mx-auto p-6 md:p-12 pt-8">
         {/* Minimal header */}
-        <div className="text-center mb-16">
-          <h1 className="text-5xl md:text-7xl font-light mb-6 text-black tracking-tight">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-2xl font-medium text-black">
             Moodboards
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto font-light">
-            Your curated fashion visions, artfully arranged
-          </p>
-          <div className="w-16 h-px bg-black mx-auto mt-8"></div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="bg-white/80 hover:bg-red-50 border-red-200 text-red-600 hover:text-red-700 hover:border-red-300"
+            onClick={handleDeleteAll}
+            disabled={isDeletingAll}
+          >
+            {isDeletingAll ? (
+              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-600 mr-2" />
+            ) : (
+              <Trash2 className="w-3 h-3 mr-2" />
+            )}
+            Delete All
+          </Button>
         </div>
 
         {/* Moodboards grid */}
@@ -197,7 +304,7 @@ export default function GalleryPage() {
 
         {/* Call to action */}
         <div className="text-center mt-20 mb-12">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-12 border border-white/50">
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-12 border border-amber-200/40 shadow-lg">
             <h3 className="text-3xl font-light mb-4 text-black">
               Ready for More?
             </h3>
