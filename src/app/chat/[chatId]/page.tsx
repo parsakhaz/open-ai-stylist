@@ -181,6 +181,8 @@ export default function ChatPage() {
     messages, 
     input, 
     handleInputChange, 
+    handleSubmit,
+    setInput,
     append, // Use append for more control
     isLoading,
     reload,
@@ -264,7 +266,7 @@ export default function ChatPage() {
     }
 
     if (imageToSend) {
-      // Create multimodal message with proper structure
+      // Create multimodal message with proper structure - need to use append for this
       append({
         role: 'user',
         content: [
@@ -272,13 +274,12 @@ export default function ChatPage() {
           { type: 'image_url', image_url: { url: imageToSend } }
         ] as any
       });
+      setInput(''); // Clear text input manually since we're using append
+      setImageToSend(null); // Clear staged image
     } else {
-      append({
-        role: 'user', 
-        content: input
-      });
+      // Use built-in handleSubmit for text-only messages - this will auto-clear input
+      handleSubmit(e);
     }
-    setImageToSend(null); // Clear staged image
   };
 
   // NEW handler for image selection from modal
