@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { UploadCloud, X, Loader2, CheckCircle, XCircle, Clock, User, Info, Plus, MessageSquare, Bookmark, ArrowRight } from 'lucide-react';
+import { UploadCloud, X, Loader2, CheckCircle, XCircle, Clock, User, Info, Plus, MessageSquare, Bookmark, ArrowRight, Palette } from 'lucide-react';
 import Link from 'next/link';
 
 export default function OnboardingPage() {
@@ -250,13 +250,14 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* Saved Section */}
+          {/* Saved Moodboards Section */}
           {!isCollapsed && (
             <div className="px-4 pb-2">
-              <div 
-                className="flex items-center gap-2 text-sm relative cursor-pointer"
+              <Link 
+                href="/gallery" 
+                className="flex items-center gap-2 text-sm hover:text-gray-800 transition-colors relative"
                 onClick={() => {
-                  // Clear completion status when user interacts with this section
+                  // Clear completion status when navigating to gallery
                   if (completedMoodboards.size > 0) {
                     Array.from(completedMoodboards).forEach(boardId => {
                       clearCompletedStatus(boardId);
@@ -264,19 +265,18 @@ export default function OnboardingPage() {
                   }
                 }}
               >
-                <img 
-                  src="/assets/Saved.svg" 
-                  alt="Saved" 
-                  className={`w-4 h-4 ${
-                    processingMoodboards.size > 0 ? 'animate-pulse' : ''
-                  }`} 
-                />
+                <Palette className={`w-4 h-4 ${
+                    processingMoodboards.size > 0 
+                      ? 'text-blue-500 animate-pulse' 
+                      : 'text-gray-600'
+                  }`} />
+
                 <span className={`${
                   processingMoodboards.size > 0 
                     ? 'text-blue-600 animate-pulse font-medium' 
                     : 'text-gray-600'
                 }`}>
-                  Saved ({moodboards.length})
+                  Moodboards ({moodboards.length})
                 </span>
                 
                 {/* Completion Badge */}
@@ -284,6 +284,7 @@ export default function OnboardingPage() {
                   <div 
                     className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-bounce cursor-pointer"
                     onClick={(e) => {
+                      e.preventDefault();
                       e.stopPropagation();
                       // Clear all completed statuses when clicked
                       Array.from(completedMoodboards).forEach(boardId => {
@@ -293,7 +294,7 @@ export default function OnboardingPage() {
                     title={`${completedMoodboards.size} moodboard${completedMoodboards.size > 1 ? 's' : ''} completed processing - click to dismiss`}
                   />
                 )}
-              </div>
+              </Link>
             </div>
           )}
 

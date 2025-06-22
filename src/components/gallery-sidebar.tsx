@@ -101,7 +101,7 @@ export function GallerySidebar() {
                 ? 'text-blue-600 animate-pulse font-medium' 
                 : 'text-gray-600'
             }`}>
-              Saved ({moodboards.length})
+              Moodboards ({moodboards.length})
             </span>
             
             {/* Completion Badge */}
