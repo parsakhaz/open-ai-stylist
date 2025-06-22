@@ -8,12 +8,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Palette, 
   MessageSquare, 
-  User, 
-  Home, 
   ChevronLeft, 
   ChevronRight,
-  Plus,
-  Image as ImageIcon
+  Plus
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -24,42 +21,7 @@ export function GallerySidebar() {
 
   const recentChats = chatSessions
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 3);
-
-  const navigationItems = [
-    {
-      href: '/',
-      label: 'Home',
-      icon: Home,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      hoverColor: 'hover:bg-blue-100'
-    },
-    {
-      href: '/chat',
-      label: 'Chat',
-      icon: MessageSquare,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      hoverColor: 'hover:bg-green-100'
-    },
-    {
-      href: '/onboarding',
-      label: 'Photos',
-      icon: User,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
-      hoverColor: 'hover:bg-orange-100'
-    },
-    {
-      href: '/gallery',
-      label: 'Gallery',
-      icon: Palette,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
-      hoverColor: 'hover:bg-purple-100'
-    }
-  ];
+    .slice(0, 6);
 
   return (
     <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-white/95 backdrop-blur-sm border-r border-gray-200 flex flex-col relative z-10 transition-all duration-300 h-screen`}>
@@ -68,7 +30,7 @@ export function GallerySidebar() {
         <div className="flex items-center justify-between">
           {!isCollapsed && (
             <Link href="/" className="flex-shrink-0">
-              <img src="/assets/Logobigger.webp" alt="StyleList" className="h-6 sm:h-8 w-auto" />
+              <img src="/assets/Logobigger.webp" alt="StyleList" className="h-8" />
             </Link>
           )}
           <Button
@@ -109,77 +71,60 @@ export function GallerySidebar() {
         </div>
       )}
 
-      {/* Navigation Menu */}
-      <div className={`${isCollapsed ? 'px-2' : 'px-4'} py-4`}>
-        <div className={`${isCollapsed ? 'space-y-3' : 'space-y-2'}`}>
-          {navigationItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href || (pathname.startsWith('/gallery') && item.href === '/gallery');
-            
-            return (
-              <Link key={item.href} href={item.href}>
-                <div className={`${isCollapsed ? 'w-12 h-12 justify-center' : 'py-3 px-4'} rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-3 group ${
-                  isActive 
-                    ? `${item.bgColor} ${item.color} shadow-sm scale-105` 
-                    : `text-gray-500 ${item.hoverColor} hover:scale-105 hover:shadow-sm`
-                }`}>
-                  <Icon className={`${isCollapsed ? 'h-5 w-5' : 'h-5 w-5'} flex-shrink-0 transition-transform group-hover:scale-110`} />
-                  {!isCollapsed && (
-                    <span className="text-sm font-medium truncate">{item.label}</span>
-                  )}
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Moodboards Summary */}
+      {/* Saved Moodboards Section */}
       {!isCollapsed && (
-        <div className="px-4 py-2">
-          <div className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl p-4 text-white shadow-lg">
-            <div className="flex items-center justify-between mb-3">
-              <Palette className="w-6 h-6" />
-              <div className="text-right">
-                <div className="text-2xl font-bold">{moodboards.length}</div>
-                <div className="text-xs opacity-90">boards</div>
-              </div>
-            </div>
-            <div className="flex items-center justify-between text-sm opacity-90">
-              <span>Total pieces</span>
-              <span className="font-semibold">{moodboards.reduce((total, board) => total + board.items.length, 0)}</span>
-            </div>
+        <div className="px-4 pb-2">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <Palette className="w-4 h-4" />
+            <span>Saved ({moodboards.length})</span>
           </div>
         </div>
       )}
 
-      {/* Recent Chats */}
-      {!isCollapsed && recentChats.length > 0 && (
-        <div className="px-4 py-2 flex-1 overflow-y-auto">
-          <div className="space-y-2">
-            {recentChats.map((session, index) => {
-              const isToday = new Date(session.createdAt).toDateString() === new Date().toDateString();
+      {/* Chat History */}
+      <div className="px-4 py-2 flex-1 overflow-y-auto">
+        {!isCollapsed && (
+          <h3 className="text-xs font-medium text-gray-500 mb-3">Recent Chats</h3>
+        )}
+        
+        <div className="space-y-1">
+          {recentChats.length === 0 ? (
+            !isCollapsed && (
+              <div className="text-center text-gray-400 text-xs py-4">
+                <MessageSquare className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                <p>No chats yet</p>
+              </div>
+            )
+          ) : (
+            recentChats.map(session => {
+              const isActive = pathname === `/chat/${session.id}`;
               return (
-                <Link key={session.id} href={`/chat/${session.id}`}>
-                  <div className="py-2 px-3 rounded-lg hover:bg-white/80 transition-all duration-200 cursor-pointer bg-white/40 border border-white/50 hover:shadow-sm group">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                        isToday ? 'bg-green-400' : index === 0 ? 'bg-blue-400' : 'bg-gray-300'
-                      }`} />
-                      <div className="text-sm text-gray-900 truncate group-hover:text-gray-700">
-                        {session.title}
-                      </div>
+                <div key={session.id} className="relative group">
+                  <Link href={`/chat/${session.id}`}>
+                    <div className={`${isCollapsed ? 'p-2' : 'py-2 px-2'} rounded hover:bg-gray-100 transition-colors cursor-pointer ${
+                      isActive ? 'bg-gray-100 border-l-2 border-purple-500' : ''
+                    }`}>
+                      {isCollapsed ? (
+                        <MessageSquare className="h-4 w-4 text-gray-600" />
+                      ) : (
+                        <div className="text-sm text-gray-700 truncate">
+                          {session.title}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+                </div>
               );
-            })}
-          </div>
-          <Link href="/chat" className="block mt-4 px-3 py-2 text-center bg-green-500 hover:bg-green-600 text-white rounded-lg transition-all duration-200 hover:shadow-sm text-sm font-medium">
-            + New Chat
-          </Link>
+            })
+          )}
         </div>
-      )}
+        
+        {!isCollapsed && recentChats.length > 0 && (
+          <Link href="/chat" className="block text-xs text-blue-600 hover:text-blue-800 mt-2 px-2">
+            View all chats →
+          </Link>
+        )}
+      </div>
 
     </div>
   );
