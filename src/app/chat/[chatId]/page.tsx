@@ -18,66 +18,92 @@ function ProductDisplay({ products, searchQuery }: { products: Product[]; search
   const { selectedProducts, toggleProductSelection } = useAppStore();
 
   if (!products || products.length === 0) {
-    return <p className="text-gray-500 italic mt-4">
-      I couldn't find anything for "{searchQuery}". Try another search?
-    </p>;
+    return (
+      <div className="mt-4 bg-white/95 backdrop-blur-sm rounded-xl p-6 border border-gray-200 shadow-sm">
+        <p className="text-gray-500 italic text-center">
+          I couldn't find anything for "{searchQuery}". Try another search?
+        </p>
+      </div>
+    );
   }
 
   return (
-    <Card className="mt-4 bg-gray-50/50">
-      <CardHeader>
-        <CardTitle className="text-lg">Here's what I found for "{searchQuery}"</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div className="mt-4 bg-white/95 backdrop-blur-sm rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-gray-50/50">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center">
+            <span className="text-green-600 font-bold text-sm">✓</span>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900">
+            Here's what I found for "{searchQuery}"
+          </h3>
+        </div>
+      </div>
+      <div className="p-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {products.map((product) => {
             const isSelected = selectedProducts.some(p => p.id === product.id);
             return (
               <div 
                 key={product.id} 
-                className={`relative cursor-pointer group border-4 rounded-lg transition-all bg-white shadow-sm hover:shadow-xl ${isSelected ? 'border-indigo-500' : 'border-transparent'}`}
+                className={`relative cursor-pointer group rounded-xl transition-all bg-white shadow-sm hover:shadow-lg border-2 overflow-hidden ${
+                  isSelected 
+                    ? 'border-purple-500 shadow-lg ring-2 ring-purple-200' 
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
                 onClick={() => toggleProductSelection(product)}
               >
                 {/* Product Image */}
-                <div className="aspect-[3/4] overflow-hidden">
+                <div className="aspect-[3/4] overflow-hidden bg-gray-50">
                   <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                 </div>
 
                 {/* Checkmark for selected items */}
                 {isSelected && (
-                  <div className="absolute top-2 right-2 bg-indigo-600 text-white rounded-full h-6 w-6 flex items-center justify-center border-2 border-white text-sm z-10">✓</div>
+                  <div className="absolute top-3 right-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full h-7 w-7 flex items-center justify-center border-2 border-white shadow-lg text-sm z-10">
+                    ✓
+                  </div>
                 )}
                 
-                {/* Product Info Overlay */}
-                <div className="p-2.5 flex flex-col">
-                  <p className="text-sm font-medium text-gray-800 line-clamp-2 leading-tight">{product.name}</p>
+                {/* Product Info */}
+                <div className="p-3 flex flex-col">
+                  <p className="text-sm font-medium text-gray-800 line-clamp-2 leading-tight mb-2">{product.name}</p>
                   
                   {/* Price */}
-                  <div className="flex items-baseline gap-2 mt-1">
-                    {product.price && <p className="text-base font-semibold text-gray-900">{product.price}</p>}
+                  <div className="flex items-baseline gap-2 mb-2">
+                    {product.price && <p className="text-base font-bold text-gray-900">{product.price}</p>}
                     {product.originalPrice && <p className="text-xs text-gray-500 line-through">{product.originalPrice}</p>}
                   </div>
 
                   {/* Rating */}
                   {product.rating && product.ratingCount && (
-                    <div className="flex items-center gap-1 mt-1 text-xs text-gray-600">
+                    <div className="flex items-center gap-1 mb-2 text-xs text-gray-600">
                       <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                      <span>{product.rating}</span>
+                      <span className="font-medium">{product.rating}</span>
                       <span className="text-gray-400">({product.ratingCount})</span>
                     </div>
                   )}
 
                   {/* Prime Badge */}
                   {product.isPrime && (
-                    <span className="mt-2 text-xs font-bold text-sky-600">prime</span>
+                    <div className="flex items-center justify-start">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
+                        prime
+                      </span>
+                    </div>
                   )}
                 </div>
+
+                {/* Selection Overlay */}
+                {isSelected && (
+                  <div className="absolute inset-0 bg-gradient-to-t from-purple-600/20 to-transparent pointer-events-none" />
+                )}
               </div>
             );
           })}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -336,91 +362,182 @@ export default function ChatPage() {
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col h-screen">
-        <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex flex-col h-screen relative">
+        {/* Animated Gradient Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 animate-gradient bg-[length:400%_400%]"></div>
+        
+        <div className="flex-1 overflow-y-auto p-4 relative z-10">
           {messages.length === 0 && !isLoading ? (
             <div className="h-full flex items-center justify-center">
-              <div className="text-center text-gray-500 max-w-md">
-                <Bot className="mx-auto h-16 w-16 mb-4 text-gray-400" />
-                <h2 className="text-3xl font-light text-black mb-3">AI Fashion Stylist</h2>
-                <p className="text-lg text-gray-600">How can I help you style your look today?</p>
+              <div className="w-full max-w-4xl">
+                <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-8 shadow-sm border-2 border-gray-200">
+                  
+                  {/* Hanger Icon */}
+                  <div className="text-center mb-6">
+                    <img src="/assets/hanger.svg" alt="Hanger" className="w-16 h-16 mx-auto" />
+                  </div>
+
+                  {/* Step Indicator */}
+                  <div className="text-center mb-2">
+                    <span className="text-sm font-medium text-black">
+                      <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Step 2</span> out of 3
+                    </span>
+                  </div>
+                  
+                  {/* Title */}
+                  <h1 className="text-4xl font-bold text-gray-900 text-center mb-4">
+                    What would you like to wear?
+                  </h1>
+
+                  {/* Subtitle */}
+                  <p className="text-lg text-gray-600 text-center mb-8">
+                    <span className="font-semibold text-gray-900"></span> Describe your dream outfit and let Stylist do the work
+                  </p>
+
+                                      {/* Recommended Styles */}
+                    <div className="mb-8">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">Recommended Styles</h3>
+                      <div className="flex flex-wrap gap-3 justify-center">
+                        {['Casual Chic', 'Business Professional', 'Bohemian', 'Minimalist', 'Streetwear', 'Vintage Inspired'].map((style, index) => (
+                          <button
+                            key={index}
+                            onClick={() => {
+                              const styleText = `I want to look ${style.toLowerCase()}`;
+                              handleInputChange({ target: { value: styleText } } as React.ChangeEvent<HTMLTextAreaElement>);
+                              // Focus the input after a short delay to ensure state update
+                              setTimeout(() => {
+                                const inputElement = document.querySelector('textarea');
+                                if (inputElement) {
+                                  inputElement.focus();
+                                  inputElement.setSelectionRange(styleText.length, styleText.length);
+                                }
+                              }, 10);
+                            }}
+                            className="px-4 py-2 rounded-full border-2 border-gray-300 hover:border-purple-500 hover:bg-purple-50 text-gray-700 hover:text-purple-700 transition-all duration-200 flex items-center gap-2 bg-white"
+                          >
+                            <span className="text-purple-600">✦</span>
+                            {style}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                </div>
               </div>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-6 max-w-4xl mx-auto">
               {messages.map((m: Message) => (
-                <div key={m.id} className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : ''}`}>
-                  {m.role === 'assistant' && <Bot className="h-8 w-8 text-gray-600 flex-shrink-0" />}
-                  <div className={`max-w-xl p-3 rounded-lg shadow-sm ${m.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-800'}`}>
-                    {m.content && <p className="mb-2">{m.content}</p>}
-                    
-                    {m.toolInvocations?.map(toolInvocation => {
-                      if (toolInvocation.toolName === 'searchProducts') {
-                        // Show loading spinner while the tool call is executing
-                        if (toolInvocation.state === 'call') {
-                          const searchQuery = (toolInvocation as any).args?.query;
-                          return (
-                            <Card key={toolInvocation.toolCallId} className="mt-4 bg-gray-50/50">
-                              <CardHeader>
-                                <CardTitle className="text-lg">Searching for "{searchQuery}"...</CardTitle>
-                              </CardHeader>
-                              <CardContent>
+                <div key={m.id} className={`flex gap-4 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  {m.role === 'assistant' && (
+                    <div className="w-10 h-10 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center flex-shrink-0 border border-purple-200">
+                      <Bot className="h-5 w-5 text-purple-600" />
+                    </div>
+                  )}
+                  
+                  <div className={`max-w-2xl ${m.role === 'user' ? 'ml-12' : 'mr-12'}`}>
+                                         <div className={`rounded-2xl shadow-sm border transition-all duration-200 hover:shadow-md ${
+                       m.role === 'user' 
+                         ? 'px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white border-purple-200' 
+                         : 'p-4 bg-white/95 backdrop-blur-sm text-gray-800 border-gray-200'
+                     }`}>
+                      {m.content && <p className="leading-relaxed">{m.content}</p>}
+                      
+                      {m.toolInvocations?.map(toolInvocation => {
+                        if (toolInvocation.toolName === 'searchProducts') {
+                          // Show loading spinner while the tool call is executing
+                          if (toolInvocation.state === 'call') {
+                            const searchQuery = (toolInvocation as any).args?.query;
+                            return (
+                              <div key={toolInvocation.toolCallId} className="mt-4 bg-white/95 backdrop-blur-sm rounded-xl p-6 border border-gray-200 shadow-sm">
+                                <div className="flex items-center gap-3 mb-4">
+                                  <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center">
+                                    <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+                                  </div>
+                                  <h3 className="text-lg font-semibold text-gray-900">
+                                    Searching for "{searchQuery}"...
+                                  </h3>
+                                </div>
                                 <div className="flex items-center justify-center py-8">
                                   <div className="flex items-center gap-3 text-gray-600">
-                                    <Loader2 className="h-6 w-6 animate-spin" />
-                                    <span className="text-sm">Finding the perfect pieces for you...</span>
+                                    <div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                                    <span className="text-sm font-medium">Finding the perfect pieces for you...</span>
                                   </div>
                                 </div>
-                              </CardContent>
-                            </Card>
-                          );
+                              </div>
+                            );
+                          }
+                          
+                          // Show results when the tool call is complete
+                          if (toolInvocation.state === 'result') {
+                            return (
+                              <ProductDisplay
+                                key={toolInvocation.toolCallId}
+                                products={(toolInvocation as any).result as Product[]}
+                                searchQuery={(toolInvocation as any).args?.query}
+                              />
+                            );
+                          }
                         }
-                        
-                        // Show results when the tool call is complete
-                        if (toolInvocation.state === 'result') {
-                          return (
-                            <ProductDisplay
-                              key={toolInvocation.toolCallId}
-                              products={(toolInvocation as any).result as Product[]}
-                              searchQuery={(toolInvocation as any).args?.query}
-                            />
-                          );
-                        }
-                      }
-                      return null;
-                    })}
+                        return null;
+                      })}
 
-                    {/* Action buttons for assistant messages */}
-                    {m.role === 'assistant' && !isLoading && (
-                      <div className="flex gap-2 mt-2 border-t pt-2">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={() => navigator.clipboard.writeText(m.content)}>
-                              <Copy className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Copy</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={() => reload()}>
-                              <RefreshCw className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Regenerate</TooltipContent>
-                        </Tooltip>
-                      </div>
-                    )}
+                      {/* Action buttons for assistant messages */}
+                      {m.role === 'assistant' && !isLoading && m.content && (
+                        <div className="flex gap-2 mt-4 pt-3 border-t border-gray-100">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="h-8 px-3 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                                onClick={() => navigator.clipboard.writeText(m.content)}
+                              >
+                                <Copy className="h-3 w-3 mr-1" />
+                                Copy
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Copy message</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="h-8 px-3 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                                onClick={() => reload()}
+                              >
+                                <RefreshCw className="h-3 w-3 mr-1" />
+                                Regenerate
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Regenerate response</TooltipContent>
+                          </Tooltip>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  {m.role === 'user' && <User className="h-8 w-8 text-indigo-600 flex-shrink-0" />}
+                  
+                  {m.role === 'user' && (
+                    <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center flex-shrink-0 border border-purple-300">
+                      <User className="h-5 w-5 text-white" />
+                    </div>
+                  )}
                 </div>
               ))}
               
               {isLoading && messages[messages.length-1]?.role === 'user' && (
-                <div className="flex gap-3">
-                  <Bot className="h-8 w-8 text-gray-600 flex-shrink-0" />
-                  <div className="max-w-xl p-3 rounded-lg shadow-sm bg-white text-gray-800">
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                <div className="flex gap-4 justify-start">
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center flex-shrink-0 border border-purple-200">
+                    <Bot className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div className="max-w-2xl mr-12">
+                    <div className="p-4 rounded-2xl shadow-sm border bg-white/95 backdrop-blur-sm text-gray-800 border-gray-200">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-sm text-gray-600">Thinking...</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -430,39 +547,64 @@ export default function ChatPage() {
         
         {/* Moodboard creation sticky bar */}
         {selectedProducts.length > 0 && (
-          <div className="p-4 bg-white border-t sticky bottom-16 z-10">
-            <Button onClick={handleCreateBoard} className="w-full bg-green-600 hover:bg-green-700">
-              Create Moodboard with {selectedProducts.length} pieces
-            </Button>
+          <div className="p-4 relative z-20">
+            <div className="max-w-4xl mx-auto">
+              <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-gray-200">
+                <Button 
+                  onClick={handleCreateBoard} 
+                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium py-3 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+                >
+                  Create Moodboard with {selectedProducts.length} pieces ✨
+                </Button>
+              </div>
+            </div>
           </div>
         )}
         
         {/* Input form */}
-        <div className="p-4 bg-white border-t">
-          {error && <div className="text-red-500 mb-2">Error: {error.message}</div>}
-          <form onSubmit={handleFormSubmit} className="relative">
-            <Textarea
-              value={input}
-              onChange={handleInputChange}
-              placeholder="Describe the style you're looking for..."
-              className="w-full p-3 pr-20 border rounded-md resize-none"
-              rows={1}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleFormSubmit(e as any);
+        <div className="p-4 relative z-20">
+          <div className="max-w-4xl mx-auto">
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                <strong>Error:</strong> {error.message}
+              </div>
+            )}
+            <form onSubmit={handleFormSubmit} className="relative">
+              <div className="bg-white/95 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
+                <Textarea
+                  value={input}
+                  onChange={handleInputChange}
+                  placeholder="Describe the style you're looking for..."
+                  className="w-full p-4 pr-16 border-0 bg-transparent resize-none focus:ring-0 focus:outline-none text-gray-800 placeholder-gray-500"
+                  rows={1}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleFormSubmit(e as any);
+                    }
+                  }}
+                />
+                {isLoading 
+                  ? <Button 
+                      type="button" 
+                      size="icon" 
+                      onClick={() => stop()} 
+                      className="absolute top-1/2 right-3 -translate-y-1/2 h-8 w-8 bg-red-100 hover:bg-red-200 text-red-600 border-0 rounded-lg"
+                    >
+                      <Loader2 className="h-4 w-4 animate-spin"/>
+                    </Button>
+                  : <Button 
+                      type="submit" 
+                      size="icon" 
+                      disabled={!input.trim()} 
+                      className="absolute top-1/2 right-3 -translate-y-1/2 h-8 w-8 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-300 disabled:to-gray-400 text-white border-0 rounded-lg transition-all duration-200"
+                    >
+                      <Send className="h-4 w-4"/>
+                    </Button>
                 }
-              }}
-            />
-            {isLoading 
-              ? <Button type="button" size="icon" onClick={() => stop()} className="absolute top-1/2 right-3 -translate-y-1/2">
-                  <Loader2 className="h-4 w-4 animate-spin"/>
-                </Button>
-              : <Button type="submit" size="icon" disabled={!input.trim()} className="absolute top-1/2 right-3 -translate-y-1/2">
-                  <Send className="h-4 w-4"/>
-                </Button>
-            }
-          </form>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </TooltipProvider>
