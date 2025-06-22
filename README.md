@@ -1,8 +1,69 @@
 # StyleList - AI Fashion Stylist
 
+<div align="center">
+  <p align="center">
+    <a href="https://www.figma.com/design/eJiELUVBnuWqzLbn5G4dFH/StyleList?node-id=68-8361&t=GbFiUd5nduyQNukT-1">
+      <img src="https://img.shields.io/badge/Figma-Design-F24E1E?style=for-the-badge&logo=figma&logoColor=white" alt="Figma Design" />
+    </a>
+    <a href="https://drive.google.com/drive/folders/138ZAhjLBEtnAIZFxL4i5bubR_Wdt_rYO?usp=drive_link">
+      <img src="https://img.shields.io/badge/Google%20Drive-Assets-4285F4?style=for-the-badge&logo=googledrive&logoColor=white" alt="Google Drive" />
+    </a>
+  </p>
+
+  <p align="center">
+    <img src="https://img.shields.io/badge/Next.js-15-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js" />
+    <img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React" />
+    <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+    <img src="https://img.shields.io/badge/Tailwind%20CSS-3-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS" />
+  </p>
+
+  <p align="center">
+    <img src="https://img.shields.io/badge/AI%20Model-Llama--4--Maverick-FF6B35?style=for-the-badge&logo=meta&logoColor=white" alt="AI Model" />
+    <img src="https://img.shields.io/badge/API-Amazon%20Products-FF9900?style=for-the-badge&logo=amazon&logoColor=white" alt="Amazon API" />
+    <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License" />
+  </p>
+
+  <br />
+  
+  <img src="./photo-for-readme.png" alt="StyleList Preview" width="100%" />
+  
+  <p align="center">
+    <strong>AI-Powered Fashion Styling Application</strong>
+  </p>
+</div>
+
+---
+
+## 📋 Project Resources
+
+📐 **Slides**: [Figma Design](https://www.figma.com/design/eJiELUVBnuWqzLbn5G4dFH/StyleList?node-id=68-8361&t=GbFiUd5nduyQNukT-1)
+
+📁 **Project Assets**: [Google Drive Folder](https://drive.google.com/drive/folders/138ZAhjLBEtnAIZFxL4i5bubR_Wdt_rYO?usp=drive_link)
+
+---
+
+## 📖 Table of Contents
+
+- [About](#about)
+- [Features](#features)
+- [Technology Stack](#technology-stack)
+- [Getting Started](#getting-started)
+- [Usage](#usage)
+- [API Endpoints](#api-endpoints)
+- [Project Structure](#project-structure)
+- [Configuration](#configuration)
+- [Development](#development)
+- [Deployment](#deployment)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
+## 🎯 About
+
 An AI-powered fashion styling application that provides personalized clothing recommendations using computer vision and natural language processing. Users can upload photos and receive styling advice focused on tops and bottoms, with integrated product search capabilities.
 
-## Features
+## ✨ Features
 
 ### Core Functionality
 - **AI Fashion Stylist**: Conversational interface powered by Llama-4-Maverick-17B model
@@ -18,7 +79,7 @@ An AI-powered fashion styling application that provides personalized clothing re
 - **Persistent State**: Cross-session data storage using Zustand
 - **Responsive Design**: Mobile and desktop optimized interface
 
-## Technology Stack
+## 🛠️ Technology Stack
 
 ### Frontend
 - **Next.js 15** with App Router and TypeScript
@@ -40,7 +101,7 @@ An AI-powered fashion styling application that provides personalized clothing re
 - **Tool calling** for product search integration
 - **Custom system prompts** optimized for fashion styling
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 - Node.js 18.0 or later
@@ -63,7 +124,12 @@ npm install
 3. Configure environment variables:
 Create a `.env.local` file with the following:
 ```env
-RAPIDAPI_KEY=your_rapidapi_key
+LLAMA_API_KEY=your_llama_api_key_here
+LLAMA_API_BASE_URL=https://api.llama.com/v1
+FASHN_API_KEY=your_fashn_api_key_here
+
+# Real-Time Amazon Data API Credentials
+RAPIDAPI_KEY=your_rapidapi_key_here
 RAPIDAPI_HOST=real-time-amazon-data.p.rapidapi.com
 ```
 
@@ -74,7 +140,7 @@ npm run dev
 
 5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-## Usage
+## 💻 Usage
 
 ### Initial Setup
 1. Navigate to the onboarding page to upload approved model photos
@@ -170,6 +236,9 @@ src/
 ## Configuration
 
 ### Environment Variables
+- `LLAMA_API_KEY`: Authentication key for Llama AI model
+- `LLAMA_API_BASE_URL`: Base URL for Llama API endpoint
+- `FASHN_API_KEY`: Authentication key for Fashion API services
 - `RAPIDAPI_KEY`: Authentication key for Amazon product API
 - `RAPIDAPI_HOST`: API host endpoint for product search
 
@@ -218,12 +287,46 @@ Ensure all environment variables are configured in your deployment platform:
 
 MIT License - see LICENSE file for details
 
-## Contributing
+## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+We welcome contributions! Please follow these guidelines:
 
-Please ensure code follows the existing style and includes appropriate documentation.
+### How to Contribute
+
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/AmazingFeature`)
+3. **Commit** your changes (`git commit -m 'Add some AmazingFeature'`)
+4. **Push** to the branch (`git push origin feature/AmazingFeature`)
+5. **Open** a Pull Request
+
+### Development Guidelines
+
+- Follow TypeScript best practices
+- Ensure code passes ESLint checks
+- Add tests for new features
+- Update documentation as needed
+- Follow the existing code style
+
+### Issues
+
+Found a bug or have a feature request? Please [open an issue](https://github.com/your-username/open-ai-stylist/issues/new) with:
+
+- Clear description of the problem/feature
+- Steps to reproduce (for bugs)
+- Expected behavior
+- Screenshots (if applicable)
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+  <p>Made with ❤️ by the StyleList Team</p>
+  <p>
+    <strong>Star ⭐ this repository if you find it helpful!</strong>
+  </p>
+</div>
