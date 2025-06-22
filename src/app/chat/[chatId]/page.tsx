@@ -416,7 +416,15 @@ export default function ChatPage() {
         onImageSelect={handleImageSelect}
       />
       <div className="flex flex-col h-screen relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 animate-gradient bg-[length:400%_400%]"></div>
+        <div 
+          className="absolute inset-0" 
+          style={{
+            backgroundImage: 'url(/assets/chat-background.svg)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
+        ></div>
         
         <div className="flex-1 overflow-y-auto p-4 relative z-10">
           {messages.length === 0 && !isLoading ? (
