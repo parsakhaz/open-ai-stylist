@@ -30,14 +30,48 @@ export default function OnboardingPage() {
     loadModelImages();
   }, [loadModelImages]);
 
+  // Convert webp to jpeg if needed
+  const convertWebpToJpeg = async (file: File): Promise<File> => {
+    if (file.type !== 'image/webp') {
+      return file; // Return original file if not webp
+    }
+
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx?.drawImage(img, 0, 0);
+        
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const convertedFile = new File([blob], file.name.replace(/\.webp$/i, '.jpg'), {
+              type: 'image/jpeg',
+              lastModified: Date.now()
+            });
+            resolve(convertedFile);
+          } else {
+            resolve(file); // Fallback to original file
+          }
+        }, 'image/jpeg', 0.9);
+      };
+      
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files) return;
 
     for (const file of Array.from(files)) {
-      const placeholderId = addPlaceholderImage(URL.createObjectURL(file));
+      const convertedFile = await convertWebpToJpeg(file);
+      const placeholderId = addPlaceholderImage(URL.createObjectURL(convertedFile));
       const formData = new FormData();
-      formData.append('image', file);
+      formData.append('image', convertedFile);
 
       try {
         const response = await fetch('/api/validate-image', {
@@ -56,7 +90,7 @@ export default function OnboardingPage() {
       } catch (error) {
         console.error('Upload failed:', error);
         updatePlaceholderImage(placeholderId, {
-          url: URL.createObjectURL(file),
+          url: URL.createObjectURL(convertedFile),
           status: 'failed',
           reason: error instanceof Error ? error.message : 'An unknown error occurred.'
         });
@@ -349,7 +383,7 @@ export default function OnboardingPage() {
                   type="file" 
                   className="hidden" 
                   onChange={handleFileChange} 
-                  accept="image/png, image/jpeg" 
+                  accept="image/png, image/jpeg, image/webp" 
                   multiple 
                 />
                 <Button 
