@@ -250,89 +250,93 @@ export default function ChatPage() {
   return (
     <TooltipProvider>
       <div className="flex flex-col h-screen">
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
-          {messages.length === 0 && !isLoading && (
-            <div className="text-center text-gray-500">
-              <Bot className="mx-auto h-12 w-12 mb-2" />
-              <h2 className="text-2xl font-semibold">AI Fashion Stylist</h2>
-              <p>How can I help you style your look today?</p>
+        <div className="flex-1 overflow-y-auto p-4">
+          {messages.length === 0 && !isLoading ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center text-gray-500 max-w-md">
+                <Bot className="mx-auto h-16 w-16 mb-4 text-gray-400" />
+                <h2 className="text-3xl font-light text-black mb-3">AI Fashion Stylist</h2>
+                <p className="text-lg text-gray-600">How can I help you style your look today?</p>
+              </div>
             </div>
-          )}
-
-          {messages.map((m: Message) => (
-            <div key={m.id} className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : ''}`}>
-              {m.role === 'assistant' && <Bot className="h-8 w-8 text-gray-600 flex-shrink-0" />}
-              <div className={`max-w-xl p-3 rounded-lg shadow-sm ${m.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-800'}`}>
-                {m.content && <p className="mb-2">{m.content}</p>}
-                
-                {m.toolInvocations?.map(toolInvocation => {
-                  if (toolInvocation.toolName === 'searchProducts') {
-                    // Show loading spinner while the tool call is executing
-                    if (toolInvocation.state === 'call') {
-                      const searchQuery = (toolInvocation as any).args?.query;
-                      return (
-                        <Card key={toolInvocation.toolCallId} className="mt-4 bg-gray-50/50">
-                          <CardHeader>
-                            <CardTitle className="text-lg">Searching for "{searchQuery}"...</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="flex items-center justify-center py-8">
-                              <div className="flex items-center gap-3 text-gray-600">
-                                <Loader2 className="h-6 w-6 animate-spin" />
-                                <span className="text-sm">Finding the perfect pieces for you...</span>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    }
+          ) : (
+            <div className="space-y-6">
+              {messages.map((m: Message) => (
+                <div key={m.id} className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : ''}`}>
+                  {m.role === 'assistant' && <Bot className="h-8 w-8 text-gray-600 flex-shrink-0" />}
+                  <div className={`max-w-xl p-3 rounded-lg shadow-sm ${m.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-800'}`}>
+                    {m.content && <p className="mb-2">{m.content}</p>}
                     
-                    // Show results when the tool call is complete
-                    if (toolInvocation.state === 'result') {
-                      return (
-                        <ProductDisplay
-                          key={toolInvocation.toolCallId}
-                          products={(toolInvocation as any).result as Product[]}
-                          searchQuery={(toolInvocation as any).args?.query}
-                        />
-                      );
-                    }
-                  }
-                  return null;
-                })}
+                    {m.toolInvocations?.map(toolInvocation => {
+                      if (toolInvocation.toolName === 'searchProducts') {
+                        // Show loading spinner while the tool call is executing
+                        if (toolInvocation.state === 'call') {
+                          const searchQuery = (toolInvocation as any).args?.query;
+                          return (
+                            <Card key={toolInvocation.toolCallId} className="mt-4 bg-gray-50/50">
+                              <CardHeader>
+                                <CardTitle className="text-lg">Searching for "{searchQuery}"...</CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <div className="flex items-center justify-center py-8">
+                                  <div className="flex items-center gap-3 text-gray-600">
+                                    <Loader2 className="h-6 w-6 animate-spin" />
+                                    <span className="text-sm">Finding the perfect pieces for you...</span>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          );
+                        }
+                        
+                        // Show results when the tool call is complete
+                        if (toolInvocation.state === 'result') {
+                          return (
+                            <ProductDisplay
+                              key={toolInvocation.toolCallId}
+                              products={(toolInvocation as any).result as Product[]}
+                              searchQuery={(toolInvocation as any).args?.query}
+                            />
+                          );
+                        }
+                      }
+                      return null;
+                    })}
 
-                {/* Action buttons for assistant messages */}
-                {m.role === 'assistant' && !isLoading && (
-                  <div className="flex gap-2 mt-2 border-t pt-2">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" onClick={() => navigator.clipboard.writeText(m.content)}>
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Copy</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" onClick={() => reload()}>
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Regenerate</TooltipContent>
-                    </Tooltip>
+                    {/* Action buttons for assistant messages */}
+                    {m.role === 'assistant' && !isLoading && (
+                      <div className="flex gap-2 mt-2 border-t pt-2">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => navigator.clipboard.writeText(m.content)}>
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Copy</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => reload()}>
+                              <RefreshCw className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Regenerate</TooltipContent>
+                        </Tooltip>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              {m.role === 'user' && <User className="h-8 w-8 text-indigo-600 flex-shrink-0" />}
-            </div>
-          ))}
-          
-          {isLoading && messages[messages.length-1]?.role === 'user' && (
-            <div className="flex gap-3">
-              <Bot className="h-8 w-8 text-gray-600 flex-shrink-0" />
-              <div className="max-w-xl p-3 rounded-lg shadow-sm bg-white text-gray-800">
-                <Loader2 className="h-5 w-5 animate-spin" />
-              </div>
+                  {m.role === 'user' && <User className="h-8 w-8 text-indigo-600 flex-shrink-0" />}
+                </div>
+              ))}
+              
+              {isLoading && messages[messages.length-1]?.role === 'user' && (
+                <div className="flex gap-3">
+                  <Bot className="h-8 w-8 text-gray-600 flex-shrink-0" />
+                  <div className="max-w-xl p-3 rounded-lg shadow-sm bg-white text-gray-800">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

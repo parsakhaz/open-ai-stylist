@@ -4,6 +4,7 @@ import { useAppStore, ModelImage } from '../store/useAppStore';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { UploadCloud, X, Loader2, CheckCircle, XCircle, Clock, ArrowRight } from 'lucide-react';
 
 export default function OnboardingPage() {
@@ -84,155 +85,178 @@ export default function OnboardingPage() {
       setDeletingImageId(null);
     }
   };
+
+  // Helper function to get tooltip content based on image status
+  const getTooltipContent = (image: ModelImage) => {
+    switch (image.status) {
+      case 'approved':
+        return 'Image approved - ready to use';
+      case 'failed':
+        return `Rejected: ${image.reason || 'Unknown reason'}`;
+      case 'validating':
+        return 'Processing image...';
+      default:
+        return 'Unknown status';
+    }
+  };
   
   const canContinue = approvedModelImageUrls.length >= 4;
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      {/* Minimal progress indicator */}
-      <div className="flex justify-center pt-8 pb-4">
-        <div className="flex items-center gap-2">
-          {[1, 2, 3, 4].map((step) => (
-            <div
-              key={step}
-              className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                step <= approvedModelImageUrls.length ? 'bg-black' : 'bg-gray-200'
-              }`}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 -mt-16">
-        
-        {/* Simple header */}
-        <div className="text-center mb-12">
-          <h1 className="text-3xl md:text-4xl font-light text-black mb-3">
-            Add 4 Photos
-          </h1>
-          <p className="text-gray-500 text-sm">
-            We'll validate them automatically
-          </p>
-        </div>
-
-        {/* Hero upload area - much larger and more prominent */}
-        {modelImages.length === 0 ? (
-          <div className="w-full max-w-lg">
-            <input 
-              ref={fileInputRef}
-              type="file" 
-              id="file-upload" 
-              className="hidden" 
-              onChange={handleFileChange} 
-              accept="image/png, image/jpeg" 
-              multiple 
-            />
-            <label htmlFor="file-upload" className="cursor-pointer">
-              <div className="aspect-square border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center hover:border-gray-400 transition-all duration-300 bg-gray-50 hover:bg-gray-100 group">
-                <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <UploadCloud className="w-8 h-8 text-white" />
-                </div>
-                <div className="text-lg font-medium text-black mb-2">Drop photos here</div>
-                <div className="text-sm text-gray-500 mb-6">or click to browse</div>
-                <Button className="bg-black hover:bg-gray-800 text-white px-6 py-2 rounded-lg">
-                  Choose Photos
-                </Button>
-              </div>
-            </label>
+    <TooltipProvider>
+      <div className="min-h-screen bg-white flex flex-col">
+        {/* Minimal progress indicator */}
+        <div className="flex justify-center pt-8 pb-4">
+          <div className="flex items-center gap-2">
+            {[1, 2, 3, 4].map((step) => (
+              <div
+                key={step}
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  step <= approvedModelImageUrls.length ? 'bg-black' : 'bg-gray-200'
+                }`}
+              />
+            ))}
           </div>
-        ) : (
-          /* Photo grid with add more option */
-          <div className="w-full max-w-4xl">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              {/* Existing photos */}
-              {modelImages.map((image) => (
-                <div key={image.id} className="relative group">
-                  <div className="aspect-square rounded-xl overflow-hidden bg-white border-2 border-gray-200">
-                    <img 
-                      src={image.url} 
-                      alt="Uploaded" 
-                      className="w-full h-full object-cover"
-                    />
-                    
-                    {/* Status indicator */}
-                    <div className={`absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center ${
-                      image.status === 'approved' ? 'bg-black' :
-                      image.status === 'failed' ? 'bg-gray-400' :
-                      'bg-gray-300'
-                    }`}>
-                      {image.status === 'approved' && <CheckCircle className="w-4 h-4 text-white" />}
-                      {image.status === 'failed' && <XCircle className="w-4 h-4 text-white" />}
-                      {image.status === 'validating' && <Clock className="w-4 h-4 text-white animate-pulse" />}
-                    </div>
+        </div>
 
-                    {/* Delete button */}
-                    {(image.status === 'approved' || image.status === 'failed') && (
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-2 left-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                        onClick={() => handleDeleteImage(image)}
-                        disabled={deletingImageId === image.id}
-                      >
-                        {deletingImageId === image.id ? 
-                          <Loader2 className="h-3 w-3 animate-spin"/> : 
-                          <X className="h-3 w-3" />
-                        }
-                      </Button>
-                    )}
+        {/* Main content area */}
+        <div className="flex-1 flex flex-col items-center justify-center px-6 -mt-16">
+          
+          {/* Simple header */}
+          <div className="text-center mb-12">
+            <h1 className="text-3xl md:text-4xl font-light text-black mb-3">
+              Add 4 Photos
+            </h1>
+            <p className="text-gray-500 text-sm">
+              We'll validate them automatically
+            </p>
+          </div>
+
+          {/* Hero upload area - much larger and more prominent */}
+          {modelImages.length === 0 ? (
+            <div className="w-full max-w-lg">
+              <input 
+                ref={fileInputRef}
+                type="file" 
+                id="file-upload" 
+                className="hidden" 
+                onChange={handleFileChange} 
+                accept="image/png, image/jpeg" 
+                multiple 
+              />
+              <label htmlFor="file-upload" className="cursor-pointer">
+                <div className="aspect-square border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center hover:border-gray-400 transition-all duration-300 bg-gray-50 hover:bg-gray-100 group">
+                  <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                    <UploadCloud className="w-8 h-8 text-white" />
                   </div>
+                  <div className="text-lg font-medium text-black mb-2">Drop photos here</div>
+                  <div className="text-sm text-gray-500 mb-6">or click to browse</div>
+                  <Button className="bg-black hover:bg-gray-800 text-white px-6 py-2 rounded-lg">
+                    Choose Photos
+                  </Button>
                 </div>
-              ))}
-              
-              {/* Add more photos - only show if less than 4 approved */}
-              {approvedModelImageUrls.length < 4 && (
-                <div className="aspect-square">
-                  <input 
-                    type="file" 
-                    id="file-upload-more" 
-                    className="hidden" 
-                    onChange={handleFileChange} 
-                    accept="image/png, image/jpeg" 
-                    multiple 
-                  />
-                  <label htmlFor="file-upload-more" className="cursor-pointer">
-                    <div className="aspect-square border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center hover:border-gray-400 transition-all duration-300 bg-gray-50 hover:bg-gray-100">
-                      <UploadCloud className="w-8 h-8 text-gray-400" />
-                    </div>
-                  </label>
-                </div>
-              )}
+              </label>
             </div>
-          </div>
-        )}
-      </div>
+          ) : (
+            /* Photo grid with add more option */
+            <div className="w-full max-w-4xl">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                {/* Existing photos */}
+                {modelImages.map((image) => (
+                  <div key={image.id} className="relative group">
+                    <div className="aspect-square rounded-xl overflow-hidden bg-white border-2 border-gray-200">
+                      <img 
+                        src={image.url} 
+                        alt="Uploaded" 
+                        className="w-full h-full object-cover"
+                      />
+                      
+                      {/* Status indicator with tooltip */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className={`absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center cursor-help ${
+                            image.status === 'approved' ? 'bg-black' :
+                            image.status === 'failed' ? 'bg-gray-400' :
+                            'bg-gray-300'
+                          }`}>
+                            {image.status === 'approved' && <CheckCircle className="w-4 h-4 text-white" />}
+                            {image.status === 'failed' && <XCircle className="w-4 h-4 text-white" />}
+                            {image.status === 'validating' && <Clock className="w-4 h-4 text-white animate-pulse" />}
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{getTooltipContent(image)}</p>
+                        </TooltipContent>
+                      </Tooltip>
 
-      {/* Bottom action area */}
-      <div className="p-6 border-t border-gray-200 bg-gray-50">
-        <div className="max-w-lg mx-auto flex items-center justify-between">
-          <div className="text-sm text-gray-500">
-            {approvedModelImageUrls.length}/4 photos ready
+                      {/* Delete button */}
+                      {(image.status === 'approved' || image.status === 'failed') && (
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          className="absolute top-2 left-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black hover:bg-red-600 text-white border-0 shadow-lg"
+                          onClick={() => handleDeleteImage(image)}
+                          disabled={deletingImageId === image.id}
+                        >
+                          {deletingImageId === image.id ? 
+                            <Loader2 className="h-3 w-3 animate-spin"/> : 
+                            <X className="h-3 w-3" />
+                          }
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Add more photos - only show if less than 4 approved */}
+                {approvedModelImageUrls.length < 4 && (
+                  <div className="aspect-square">
+                    <input 
+                      type="file" 
+                      id="file-upload-more" 
+                      className="hidden" 
+                      onChange={handleFileChange} 
+                      accept="image/png, image/jpeg" 
+                      multiple 
+                    />
+                    <label htmlFor="file-upload-more" className="cursor-pointer">
+                      <div className="aspect-square border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center hover:border-gray-400 transition-all duration-300 bg-gray-50 hover:bg-gray-100">
+                        <UploadCloud className="w-8 h-8 text-gray-400" />
+                      </div>
+                    </label>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom action area */}
+        <div className="p-6 border-t border-gray-200 bg-gray-50">
+          <div className="max-w-lg mx-auto flex items-center justify-between">
+            <div className="text-sm text-gray-500">
+              {approvedModelImageUrls.length}/4 photos ready
+            </div>
+            <Button 
+              onClick={() => router.push('/chat')}
+              disabled={!canContinue}
+              className={`px-6 py-2 rounded-lg transition-all duration-300 ${
+                canContinue 
+                  ? 'bg-black hover:bg-gray-800 text-white' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              {canContinue ? (
+                <>
+                  Continue <ArrowRight className="w-4 h-4 ml-2" />
+                </>
+              ) : (
+                'Add more photos'
+              )}
+            </Button>
           </div>
-          <Button 
-            onClick={() => router.push('/chat')}
-            disabled={!canContinue}
-            className={`px-6 py-2 rounded-lg transition-all duration-300 ${
-              canContinue 
-                ? 'bg-black hover:bg-gray-800 text-white' 
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            {canContinue ? (
-              <>
-                Continue <ArrowRight className="w-4 h-4 ml-2" />
-              </>
-            ) : (
-              'Add more photos'
-            )}
-          </Button>
         </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 } 
