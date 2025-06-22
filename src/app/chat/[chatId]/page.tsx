@@ -242,7 +242,7 @@ export default function ChatPage() {
       }).then(response => {
         console.log('[Auto-Style] API response:', response.status);
         if (response.ok) {
-          toast('🪄 Auto-styling with gender-aware search...', { icon: <Sparkles className="w-4 h-4 text-purple-400" /> });
+          toast('🪄 Auto-styling with search...', { icon: <Sparkles className="w-4 h-4 text-purple-400" /> });
         } else {
           console.error('[Auto-Style] API call failed:', response.status);
         }
