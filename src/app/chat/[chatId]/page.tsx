@@ -416,15 +416,46 @@ export default function ChatPage() {
         onImageSelect={handleImageSelect}
       />
       <div className="flex flex-col h-screen relative">
-        <div 
-          className="absolute inset-0" 
-          style={{
-            backgroundImage: 'url(/assets/chat-background.svg)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat'
-          }}
-        ></div>
+
+        {/* SVG Gradient Background - Same as onboarding page */}
+        <div className="absolute inset-0 overflow-hidden">
+          <svg 
+            width="100%" 
+            height="100%" 
+            viewBox="0 0 1580 1515" 
+            fill="none" 
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-full h-full object-cover"
+            preserveAspectRatio="xMidYMid slice"
+          >
+            <g filter="url(#filter0_f_68_8252)">
+              <circle cx="604.5" cy="604.5" r="204.5" fill="#9ED5F4"/>
+            </g>
+            <g filter="url(#filter1_f_68_8252)">
+              <circle cx="975.5" cy="655.5" r="204.5" fill="#F9CBE3"/>
+            </g>
+            <g filter="url(#filter2_f_68_8252)">
+              <circle cx="739.5" cy="910.5" r="204.5" fill="#9996CF"/>
+            </g>
+            <defs>
+              <filter id="filter0_f_68_8252" x="0" y="0" width="1209" height="1209" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+                <feFlood floodOpacity="0" result="BackgroundImageFix"/>
+                <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+                <feGaussianBlur stdDeviation="200" result="effect1_foregroundBlur_68_8252"/>
+              </filter>
+              <filter id="filter1_f_68_8252" x="371" y="51" width="1209" height="1209" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+                <feFlood floodOpacity="0" result="BackgroundImageFix"/>
+                <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+                <feGaussianBlur stdDeviation="200" result="effect1_foregroundBlur_68_8252"/>
+              </filter>
+              <filter id="filter2_f_68_8252" x="135" y="306" width="1209" height="1209" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+                <feFlood floodOpacity="0" result="BackgroundImageFix"/>
+                <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+                <feGaussianBlur stdDeviation="200" result="effect1_foregroundBlur_68_8252"/>
+              </filter>
+            </defs>
+          </svg>
+        </div>
         
         <div className="flex-1 overflow-y-auto p-4 relative z-10">
           {messages.length === 0 && !isLoading ? (
