@@ -35,6 +35,15 @@
       background-position: 350% 50%, 350% 50%;
     }
   }
+
+  @keyframes gradient {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
 }
 
 @variant dark (&:where(.dark, .dark *));
@@ -68,4 +77,8 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.animate-gradient {
+  animation: gradient 15s ease infinite;
 }
