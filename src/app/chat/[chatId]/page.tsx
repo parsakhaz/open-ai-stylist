@@ -380,7 +380,7 @@ export default function ChatPage() {
                   {/* Step Indicator */}
                   <div className="text-center mb-2">
                     <span className="text-sm font-medium text-black">
-                      <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Step 2</span> out of 3
+                      <span className="text-[#7D8FE2] font-bold">Step 2</span> out of 3
                     </span>
                   </div>
                   
@@ -415,7 +415,7 @@ export default function ChatPage() {
                             }}
                             className="px-4 py-2 rounded-full border-2 border-gray-300 hover:border-purple-500 hover:bg-purple-50 text-gray-700 hover:text-purple-700 transition-all duration-200 flex items-center gap-2 bg-white"
                           >
-                            <span className="text-purple-600">✦</span>
+                            <span className="text-[#7D8FE2]">✦</span>
                             {style}
                           </button>
                         ))}
@@ -430,15 +430,15 @@ export default function ChatPage() {
               {messages.map((m: Message) => (
                 <div key={m.id} className={`flex gap-4 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   {m.role === 'assistant' && (
-                    <div className="w-10 h-10 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center flex-shrink-0 border border-purple-200">
-                      <Bot className="h-5 w-5 text-purple-600" />
-                    </div>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-purple-600 flex-shrink-0 mt-1">
+                      <path d="M7.90838 12.0508C7.90838 12.0508 2.18033 17.7157 1.56112 18.6102C0.941919 19.5046 0.694183 20.25 1.56112 20.25C2.42807 20.25 18.7449 18.6102 20.7577 17.8648C22.7704 17.1194 23.3893 16.6722 22.7702 15.6286C22.1512 14.5851 15.1329 12.498 11.3142 11.3054C11.0046 11.2061 10.3853 10.888 10.3853 10.411C10.3853 9.81468 10.6949 9.66561 10.8498 9.36745C11.0046 9.0693 12.8623 7.72764 12.8623 6.38594C12.8623 5.04424 12.2431 4.14982 10.6949 3.85165C9.64728 3.64987 8.74055 3.72409 8.12131 4.29661C7.50207 4.86914 7.4974 5.72826 7.34725 6.25837" stroke="currentColor" strokeWidth="1.83333"/>
+                    </svg>
                   )}
                   
                   <div className={`max-w-2xl ${m.role === 'user' ? 'ml-12' : 'mr-12'}`}>
                                          <div className={`rounded-2xl shadow-sm border transition-all duration-200 hover:shadow-md ${
                        m.role === 'user' 
-                         ? 'px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white border-purple-200' 
+                         ? 'px-4 py-2 bg-black text-white border-gray-800' 
                          : 'p-4 bg-white/95 backdrop-blur-sm text-gray-800 border-gray-200'
                      }`}>
                       {m.content && <p className="leading-relaxed">{m.content}</p>}
@@ -519,7 +519,7 @@ export default function ChatPage() {
                   </div>
                   
                   {m.role === 'user' && (
-                    <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center flex-shrink-0 border border-purple-300">
+                    <div className="w-10 h-10 bg-gradient-to-br from-black to-black rounded-full flex items-center justify-center flex-shrink-0 border border-purple-300">
                       <User className="h-5 w-5 text-white" />
                     </div>
                   )}
@@ -528,9 +528,9 @@ export default function ChatPage() {
               
               {isLoading && messages[messages.length-1]?.role === 'user' && (
                 <div className="flex gap-4 justify-start">
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center flex-shrink-0 border border-purple-200">
-                    <Bot className="h-5 w-5 text-purple-600" />
-                  </div>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-purple-600 flex-shrink-0 mt-1">
+                    <path d="M7.90838 12.0508C7.90838 12.0508 2.18033 17.7157 1.56112 18.6102C0.941919 19.5046 0.694183 20.25 1.56112 20.25C2.42807 20.25 18.7449 18.6102 20.7577 17.8648C22.7704 17.1194 23.3893 16.6722 22.7702 15.6286C22.1512 14.5851 15.1329 12.498 11.3142 11.3054C11.0046 11.2061 10.3853 10.888 10.3853 10.411C10.3853 9.81468 10.6949 9.66561 10.8498 9.36745C11.0046 9.0693 12.8623 7.72764 12.8623 6.38594C12.8623 5.04424 12.2431 4.14982 10.6949 3.85165C9.64728 3.64987 8.74055 3.72409 8.12131 4.29661C7.50207 4.86914 7.4974 5.72826 7.34725 6.25837" stroke="currentColor" strokeWidth="1.83333"/>
+                  </svg>
                   <div className="max-w-2xl mr-12">
                     <div className="p-4 rounded-2xl shadow-sm border bg-white/95 backdrop-blur-sm text-gray-800 border-gray-200">
                       <div className="flex items-center gap-2">
@@ -589,7 +589,7 @@ export default function ChatPage() {
                       type="button" 
                       size="icon" 
                       onClick={() => stop()} 
-                      className="absolute top-1/2 right-3 -translate-y-1/2 h-8 w-8 bg-red-100 hover:bg-red-200 text-red-600 border-0 rounded-lg"
+                      className="absolute top-4 right-4 h-8 w-8 bg-red-100 hover:bg-red-200 text-red-600 border-0 rounded-full"
                     >
                       <Loader2 className="h-4 w-4 animate-spin"/>
                     </Button>
@@ -597,7 +597,7 @@ export default function ChatPage() {
                       type="submit" 
                       size="icon" 
                       disabled={!input.trim()} 
-                      className="absolute top-1/2 right-3 -translate-y-1/2 h-8 w-8 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-300 disabled:to-gray-400 text-white border-0 rounded-lg transition-all duration-200"
+                      className="absolute top-4 right-4 h-8 w-8 bg-black hover:bg-gray-800 disabled:bg-gray-300 text-white border-0 rounded-full transition-all duration-200"
                     >
                       <Send className="h-4 w-4"/>
                     </Button>

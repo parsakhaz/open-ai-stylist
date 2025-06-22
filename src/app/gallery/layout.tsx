@@ -101,8 +101,8 @@ export default function GalleryLayout({
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
                   <defs>
                     <linearGradient id="plusGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#9333ea" />
-                      <stop offset="100%" stopColor="#db2777" />
+                    <stop offset="0%" stopColor="#7D8FE2" />
+                    <stop offset="100%" stopColor="#7D8FE2" />
                     </linearGradient>
                   </defs>
                   <path d="M12 5V19M5 12H19" stroke="url(#plusGradient)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
