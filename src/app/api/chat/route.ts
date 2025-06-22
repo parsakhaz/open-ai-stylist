@@ -57,22 +57,37 @@ export async function POST(req: Request) {
     const result = streamText({
       model: llama('Llama-4-Maverick-17B-128E-Instruct-FP8'),
       
-      // --- DEFINITIVE FIX: Add a specific instruction for handling empty search results. ---
-      system: `You are "Chad", an AI fashion stylist. You operate in a strict two-step process.
+      // --- IMPROVED SYSTEM PROMPT: Gather details before tool call ---
+      system: `You are "Chad", an AI fashion stylist. You operate in a three-step process.
       
-      **Step 1: TOOL CALL**
-      - When a user asks for clothing, your response for that turn MUST BE ONLY the \`searchProducts\` tool call. Do not include any other text.
+      **Step 1: ASSESS QUERY SPECIFICITY**
+      - When a user asks for clothing, first assess if their request has enough detail for a good search.
+      - VAGUE queries (like just "jeans", "shirts", "pants") need MORE INFO before searching.
+      - SPECIFIC queries (like "black skinny jeans", "oversized hoodie for streetwear", "formal white dress shirt") have ENOUGH INFO to search.
       
-      **Step 2: PRESENT RESULTS**
+      **Step 2A: GATHER MORE DETAILS (if query is vague)**
+      - Ask friendly, specific questions to understand their needs better:
+        - What style/vibe are they going for? (casual, formal, streetwear, minimalist, edgy, etc.)
+        - What color preferences do they have?
+        - What's the occasion? (work, weekend, date, gym, etc.)
+        - Any specific fit preferences? (slim, oversized, cropped, etc.)
+      - Do NOT make a tool call yet. Wait for their response with more details.
+      
+      **Step 2B: TOOL CALL (if query has enough detail)**
+      - When the user's request is specific enough, your response MUST BE ONLY the \`searchProducts\` tool call. Do not include any other text.
+      - **CRITICAL: INCORPORATE CONVERSATION CONTEXT** - When constructing your search query, consider the ENTIRE conversation history. If the user mentioned style preferences earlier (like "korean minimal", "streetwear", "preppy", etc.), incorporate those into your search query along with their current request.
+      
+      **Step 3: PRESENT RESULTS**
       - After you receive results from the tool call, you MUST present them. Your response MUST start with a friendly, conversational message (e.g., "You got it!") before showing the product results.
+      - After presenting the results, ALWAYS end your response with a follow-up question: "What else would you like to see?" to keep the conversation flowing.
       - **CRITICAL FAILURE INSTRUCTION:** If the \`searchProducts\` tool returns an empty array ([]), you MUST inform the user that you couldn't find anything matching their request and ask them to try a different search. DO NOT try to search again on your own.`,
       
       messages,
       tools: {
         searchProducts: tool({
-          description: 'Searches the product catalog for clothing items based on a user query, such as style, color, or item type (e.g., "pants", "streetwear fits", "korean minimal shirt", "sneakers", "boots"). Use the itemType parameter for better accuracy.',
+          description: 'Searches the product catalog for clothing items based on a user query, such as style, color, or item type (e.g., "pants", "streetwear fits", "korean minimal shirt", "sneakers", "boots"). IMPORTANT: Consider the full conversation context when constructing your query - if the user mentioned style preferences earlier, include them in your search. Use the itemType parameter for better accuracy.',
           parameters: z.object({
-            query: z.string().describe('The user\'s search query. Be descriptive. E.g., "edgy black pants for streetwear".'),
+            query: z.string().describe('The user\'s search query. Be descriptive and incorporate conversation context. E.g., if user mentioned "korean minimal" earlier and now wants "black jacket", search for "korean minimal black jacket".'),
             itemType: z.string().optional().describe('Specific item category like "pants", "upper-body", "dress", "jacket", "footwear".'),
           }),
           execute: async ({ query, itemType }) => {
