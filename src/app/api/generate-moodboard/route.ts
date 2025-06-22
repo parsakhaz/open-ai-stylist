@@ -3,10 +3,13 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 // IMPORT THE CORRECT PRODUCT TYPE FROM OUR CENTRAL STORE
 import { Product } from '@/app/store/useAppStore';
+import { promises as fs } from 'fs';
+import path from 'path';
+import { generateAndSaveTryOnImage } from '@/lib/fashn.service';
 
 console.log('[api/generate-moodboard] Module loaded.');
 
-export const maxDuration = 60; // Allow up to 60 seconds for this complex task
+export const maxDuration = 120; // INCREASE DURATION to allow for multiple API calls
 
 // This is the URL of our Next.js app.
 // It's crucial for server-to-server API calls.
@@ -34,6 +37,30 @@ interface MoodboardSummary {
   description: string;
 }
 
+// ADDED: Helper to get approved model images from our local data
+const MODEL_CONFIG_FILE = path.join(process.cwd(), 'data', 'model-images.json');
+async function getApprovedModelUrl(): Promise<string | null> {
+    try {
+        const data = await fs.readFile(MODEL_CONFIG_FILE, 'utf-8');
+        const config = JSON.parse(data);
+        const approvedImages = config.images.filter((img: any) => img.status === 'approved');
+        
+        if (approvedImages.length === 0) {
+            console.error('[api/generate-moodboard] No approved model images found!');
+            return null;
+        }
+        
+        // Select one randomly
+        const randomIndex = Math.floor(Math.random() * approvedImages.length);
+        console.log(`[api/generate-moodboard] Randomly selected model: ${approvedImages[randomIndex].url}`);
+        return approvedImages[randomIndex].url;
+
+    } catch (error) {
+        console.error('[api/generate-moodboard] Could not read model images config.', error);
+        return null;
+    }
+}
+
 export async function POST(req: Request) {
   // LOGGING: Announce the start of the request.
   console.log('[api/generate-moodboard] Received a request.');
@@ -53,15 +80,35 @@ export async function POST(req: Request) {
     // LOGGING: Using proxy for Llama API calls
     console.log(`[api/generate-moodboard] Using Llama proxy base at: ${appURL}/api/v1`);
 
-    // Step 1: MOCK Try-On image generation
-    const tryOnUrlMap: Record<string, string> = {};
-    for (const product of selectedProducts) {
-      // For the POC, we just use the original product image as the "try-on"
-      tryOnUrlMap[product.id] = product.imageUrl;
+    // --- START OF NEW LOGIC ---
+
+    // Step 1: Get a random approved model image
+    const modelImageUrl = await getApprovedModelUrl();
+    if (!modelImageUrl) {
+        throw new Error("No approved model images are available for virtual try-on.");
     }
 
-    // LOGGING: Confirm try-on mapping was created.
-    console.log('[api/generate-moodboard] Created try-on URL map:', tryOnUrlMap);
+    // Step 2: Generate try-on images for all selected products in parallel
+    console.log('[api/generate-moodboard] Starting virtual try-on generation for all products...');
+    const tryOnPromises = selectedProducts.map(product => 
+        generateAndSaveTryOnImage(modelImageUrl, product.imageUrl).then(tryOnUrl => ({
+            productId: product.id,
+            url: tryOnUrl
+        }))
+    );
+    
+    // This will run all API calls concurrently, which is much faster.
+    const tryOnResults = await Promise.all(tryOnPromises);
+
+    // Step 3: Create the final URL map for the client
+    const tryOnUrlMap: Record<string, string> = {};
+    for (const result of tryOnResults) {
+        tryOnUrlMap[result.productId] = result.url;
+    }
+
+    console.log('[api/generate-moodboard] Created final try-on URL map:', tryOnUrlMap);
+
+    // --- END OF NEW LOGIC ---
 
     // Step 2: Ask Llama to categorize the selections using generateObject
     const productDescriptions = selectedProducts.map((p: Product) => p.name).join(', ');
@@ -95,6 +142,7 @@ export async function POST(req: Request) {
   } catch (error) {
     // LOGGING: This is your most important log. It catches all errors in the process.
     console.error('[api/generate-moodboard] Mood board generation failed:', error);
-    return new Response(JSON.stringify({ error: 'Failed to generate mood board' }), { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Failed to generate mood board';
+    return new Response(JSON.stringify({ error: errorMessage }), { status: 500 });
   }
 } 

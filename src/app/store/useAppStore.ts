@@ -18,7 +18,7 @@ export interface Product {
 }
 export interface ModelImage { id: number; url: string; status: 'validating' | 'approved' | 'failed'; reason?: string; }
 export interface MoodboardItem extends Product { tryOnUrl: string; }
-export interface Moodboard { id: string; title: string; description: string; items: (Product & { tryOnUrl?: string })[]; }
+export interface Moodboard { id: string; title: string; description: string; items: MoodboardItem[]; }
 
 // Interface for a chat session summary
 export interface ChatSession {
@@ -143,9 +143,10 @@ export const useAppStore = create<AppState>()(
       },
       clearSelectedProducts: () => set({ selectedProducts: [] }),
       createOrUpdateMoodboard: (title, description, action, itemsToAdd, tryOnUrlMap) => {
-        const newMoodboardItems = itemsToAdd.map(product => ({
+        // This logic is now type-safe with our new interfaces.
+        const newMoodboardItems: MoodboardItem[] = itemsToAdd.map(product => ({
           ...product,
-          tryOnUrl: tryOnUrlMap[product.id]
+          tryOnUrl: tryOnUrlMap[product.id] // This is guaranteed to exist by our API route
         }));
 
         set(state => {

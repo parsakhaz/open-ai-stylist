@@ -1,9 +1,117 @@
 'use client';
 
-import { useAppStore } from '../store/useAppStore';
+import { useAppStore, MoodboardItem } from '../store/useAppStore';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Heart, ExternalLink, Star, Tag, ShoppingBag } from 'lucide-react';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// NEW COMPONENT: Encapsulates the hover logic for a single product card
+function MoodboardProductCard({ item }: { item: MoodboardItem }) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  // The default image is the try-on. On hover, it's the original product image.
+  const displayUrl = isHovered ? item.imageUrl : item.tryOnUrl;
+
+  return (
+    <div 
+      className="break-inside-avoid"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="group relative bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-500 border border-gray-200 overflow-hidden">
+        {/* Product image with transition */}
+        <div className="relative aspect-[3/4] overflow-hidden bg-gray-50">
+          <AnimatePresence mode="wait">
+            <motion.img
+              key={displayUrl} // Key change triggers the animation
+              src={displayUrl}
+              alt={item.name}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="absolute w-full h-full object-cover"
+            />
+          </AnimatePresence>
+
+          {/* Minimal overlay */}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300"></div>
+          
+          {/* Floating action buttons */}
+          <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+            <button className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200 hover:scale-110">
+              <Heart className="w-4 h-4 text-gray-700 hover:text-black transition-colors" />
+            </button>
+            <a 
+              href={item.buyLink} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="w-10 h-10 bg-black rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200 hover:scale-110"
+            >
+              <ExternalLink className="w-4 h-4 text-white" />
+            </a>
+          </div>
+
+          {/* Price badge */}
+          {item.price && (
+            <div className="absolute top-4 left-4 bg-black text-white px-3 py-1 rounded-md text-sm font-medium">
+              {item.price}
+            </div>
+          )}
+
+          {/* Prime badge */}
+          {item.isPrime && (
+            <div className="absolute top-4 left-4 mt-10 bg-gray-800 text-white px-2 py-1 rounded text-xs font-medium">
+              prime
+            </div>
+          )}
+        </div>
+
+        {/* Product info */}
+        <div className="p-5">
+          <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 leading-tight">
+            {item.name}
+          </h3>
+          
+          {/* Rating */}
+          {item.rating && item.ratingCount && (
+            <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-1">
+                <Star className="w-4 h-4 text-gray-400 fill-gray-400" />
+                <span className="text-sm font-medium text-gray-700">{item.rating}</span>
+              </div>
+              <span className="text-xs text-gray-500">({item.ratingCount})</span>
+            </div>
+          )}
+
+          {/* Price info */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-baseline gap-2">
+              {item.price && (
+                <span className="text-lg font-semibold text-black">{item.price}</span>
+              )}
+              {item.originalPrice && (
+                <span className="text-sm text-gray-500 line-through">{item.originalPrice}</span>
+              )}
+            </div>
+            
+            <a 
+              href={item.buyLink} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-black transition-colors"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              Shop
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function GalleryPage() {
   const { moodboards } = useAppStore();
@@ -82,93 +190,10 @@ export default function GalleryPage() {
                 <p className="text-lg text-gray-600 max-w-2xl mx-auto font-light">{board.description}</p>
               </div>
 
-              {/* Products masonry grid */}
+              {/* Products masonry grid - Updated to use the new MoodboardProductCard component */}
               <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
-                {board.items.map((item, itemIndex) => (
-                  <div key={`${board.id}-${item.id}`} className="break-inside-avoid">
-                    <div className="group relative bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-500 border border-gray-200 overflow-hidden">
-                      {/* Product image */}
-                      <div className="relative aspect-[3/4] overflow-hidden bg-gray-50">
-                        <img 
-                          src={item.imageUrl} 
-                          alt={item.name} 
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
-                        />
-                        
-                        {/* Minimal overlay */}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300"></div>
-                        
-                        {/* Floating action buttons */}
-                        <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                          <button className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200 hover:scale-110">
-                            <Heart className="w-4 h-4 text-gray-700 hover:text-black transition-colors" />
-                          </button>
-                          <a 
-                            href={item.buyLink} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="w-10 h-10 bg-black rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200 hover:scale-110"
-                          >
-                            <ExternalLink className="w-4 h-4 text-white" />
-                          </a>
-                        </div>
-
-                        {/* Price badge */}
-                        {item.price && (
-                          <div className="absolute top-4 left-4 bg-black text-white px-3 py-1 rounded-md text-sm font-medium">
-                            {item.price}
-                          </div>
-                        )}
-
-                        {/* Prime badge */}
-                        {item.isPrime && (
-                          <div className="absolute top-4 left-4 mt-10 bg-gray-800 text-white px-2 py-1 rounded text-xs font-medium">
-                            prime
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Product info */}
-                      <div className="p-5">
-                        <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 leading-tight">
-                          {item.name}
-                        </h3>
-                        
-                        {/* Rating */}
-                        {item.rating && item.ratingCount && (
-                          <div className="flex items-center gap-2 mb-3">
-                            <div className="flex items-center gap-1">
-                              <Star className="w-4 h-4 text-gray-400 fill-gray-400" />
-                              <span className="text-sm font-medium text-gray-700">{item.rating}</span>
-                            </div>
-                            <span className="text-xs text-gray-500">({item.ratingCount})</span>
-                          </div>
-                        )}
-
-                        {/* Price info */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-baseline gap-2">
-                            {item.price && (
-                              <span className="text-lg font-semibold text-black">{item.price}</span>
-                            )}
-                            {item.originalPrice && (
-                              <span className="text-sm text-gray-500 line-through">{item.originalPrice}</span>
-                            )}
-                          </div>
-                          
-                          <a 
-                            href={item.buyLink} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-black transition-colors"
-                          >
-                            <ShoppingBag className="w-4 h-4" />
-                            Shop
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                {board.items.map((item) => (
+                  <MoodboardProductCard key={`${board.id}-${item.id}`} item={item} />
                 ))}
               </div>
 
