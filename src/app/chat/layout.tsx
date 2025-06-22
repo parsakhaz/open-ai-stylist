@@ -107,7 +107,7 @@ export default function ChatLayout({
                   </defs>
                   <path d="M12 5V19M5 12H19" stroke="url(#plusGradient)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                New Moodboard
+                New Chat
               </Button>
             </Link>
           </div>

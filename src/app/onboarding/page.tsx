@@ -362,7 +362,7 @@ export default function OnboardingPage() {
                 {/* Full-Body Images Rule */}
                 <div className="text-center">
                   <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <User className="w-6 h-6 text-gray-600" />
+                    <img src="/assets/FullBody.png" alt="Full Body" className="w-6 h-6" />
                   </div>
                   <h3 className="font-semibold text-gray-900 mb-2">Full-Body Images</h3>
                   <p className="text-xs text-gray-500 leading-relaxed">
@@ -373,7 +373,7 @@ export default function OnboardingPage() {
                 {/* Single Person Rule */}
                 <div className="text-center">
                   <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <Info className="w-6 h-6 text-gray-600" />
+                    <img src="/assets/SinglePerson.png" alt="Single Person" className="w-6 h-6" />
                   </div>
                   <h3 className="font-semibold text-gray-900 mb-2">Single Person</h3>
                   <p className="text-xs text-gray-500 leading-relaxed">
@@ -385,7 +385,7 @@ export default function OnboardingPage() {
                 {!isChillMode && (
                   <div className="text-center">
                     <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <Info className="w-6 h-6 text-gray-600" />
+                      <img src="/assets/Clothing.png" alt="Simple Clothing" className="w-6 h-6" />
                     </div>
                     <h3 className="font-semibold text-gray-900 mb-2">Simple Clothing</h3>
                     <p className="text-xs text-gray-500 leading-relaxed">
@@ -415,7 +415,11 @@ export default function OnboardingPage() {
                             image.status === 'failed' ? 'bg-red-500' :
                             'bg-yellow-500'
                           }`}>
-                            {image.status === 'approved' && <CheckCircle className="w-3 h-3 text-white" />}
+                            {image.status === 'approved' && (
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M5.63672 14.2427L9.87936 18.4853L18.3637 10" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            )}
                             {image.status === 'failed' && <XCircle className="w-3 h-3 text-white" />}
                             {image.status === 'validating' && <Clock className="w-3 h-3 text-white animate-pulse" />}
                           </div>

@@ -17,7 +17,7 @@ export default function HomePage() {
       {/* Main Content */}
       <div className="relative z-10 flex flex-col items-center justify-center text-center">
                  {/* Hanger Icon */}
-            <div className="mb-6">
+            <div className="mb-2">
            <img src="/assets/hanger.svg" alt="Hanger" className="w-16 h-16 text-gray-800 animate-float" />
             </div>
             
@@ -42,7 +42,7 @@ export default function HomePage() {
                 <Button 
             className="bg-gray-800 hover:bg-gray-900 text-white px-8 py-3 rounded-lg text-lg font-medium transition-all duration-300 cursor-pointer"
           >
-            Start Styling
+            Start Styling!
                 </Button>
               </Link>
       </div>
