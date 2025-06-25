@@ -90,16 +90,25 @@ Make the title and description feel appropriate for ${searchDecision.detectedGen
 
     const finalBoardId = boardId || uuidv4();
 
-    // 4. Generate Try-Ons for the products
-    const tryOnUrlMap: Record<string, string> = {};
-    for (const product of selectedProducts) {
+    // 4. Generate Try-Ons for the products (concurrently)
+    const tryOnPromises = selectedProducts.map(async (product) => {
       const modelUrl = await getApprovedModelUrl();
       if (modelUrl) {
-        tryOnUrlMap[product.id] = await generateAndSaveTryOnImage(modelUrl, product.imageUrl, mode);
+        const tryOnUrl = await generateAndSaveTryOnImage(modelUrl, product.imageUrl, mode);
+        return { productId: product.id, tryOnUrl };
       } else {
-        tryOnUrlMap[product.id] = product.imageUrl;
+        return { productId: product.id, tryOnUrl: product.imageUrl };
       }
-    }
+    });
+
+    // Wait for all try-on generations to complete concurrently
+    const tryOnResults = await Promise.all(tryOnPromises);
+    
+    // Build the tryOnUrlMap from results
+    const tryOnUrlMap: Record<string, string> = {};
+    tryOnResults.forEach(result => {
+      tryOnUrlMap[result.productId] = result.tryOnUrl;
+    });
 
     // 5. Assemble the final Moodboard object
     const newBoard: Moodboard = {
