@@ -47,7 +47,7 @@ async function getApprovedModelUrl(): Promise<string | null> {
     }
 }
 
-async function runProactiveStyling(adviceText: string) {
+async function runProactiveStyling(adviceText: string, mode: "performance" | "balanced" | "quality" = "performance") {
   try {
     // 1. AI analyzes its own advice to decide what to search for
     const { object: searchDecision } = await generateObject({
@@ -95,7 +95,7 @@ Make the title and description feel appropriate for ${searchDecision.detectedGen
     for (const product of selectedProducts) {
       const modelUrl = await getApprovedModelUrl();
       if (modelUrl) {
-        tryOnUrlMap[product.id] = await generateAndSaveTryOnImage(modelUrl, product.imageUrl);
+        tryOnUrlMap[product.id] = await generateAndSaveTryOnImage(modelUrl, product.imageUrl, mode);
       } else {
         tryOnUrlMap[product.id] = product.imageUrl;
       }
@@ -128,13 +128,15 @@ Make the title and description feel appropriate for ${searchDecision.detectedGen
 
 export async function POST(req: Request) {
   try {
-    const { adviceText } = await req.json();
+    const { adviceText, tryOnMode } = await req.json();
+    console.log(`[proactive-style-generator] Received tryOnMode: ${tryOnMode}, will use: ${tryOnMode || "performance"}`);
+    
     if (!adviceText) {
       return NextResponse.json({ error: 'Missing adviceText' }, { status: 400 });
     }
 
     // Don't wait for the process to finish. This makes the API call non-blocking.
-    runProactiveStyling(adviceText);
+    runProactiveStyling(adviceText, tryOnMode || "performance");
 
     // Immediately return a success response to the client.
     return NextResponse.json({ message: 'Proactive styling process initiated.' }, { status: 202 });

@@ -174,6 +174,7 @@ export default function ChatPage() {
     addCompletedMoodboard,
     setMoodboardProcessing,
     setMoodboardCompleted,
+    tryOnMode,
   } = useAppStore();
 
   // NEW STATE for image selection and auto-styling
@@ -238,7 +239,7 @@ export default function ChatPage() {
       fetch('/api/proactive-style-generator', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adviceText: lastMessage.content }),
+        body: JSON.stringify({ adviceText: lastMessage.content, tryOnMode }),
       }).then(response => {
         console.log('[Auto-Style] API response:', response.status);
         if (response.ok) {
@@ -397,7 +398,7 @@ export default function ChatPage() {
     toast.success('✅ Moodboard created! Generating try-ons...');
 
     try {
-        const payload = { selectedProducts, existingMoodboards: moodboards.map(b => ({ title: b.title, description: b.description })), boardId };
+        const payload = { selectedProducts, existingMoodboards: moodboards.map(b => ({ title: b.title, description: b.description })), boardId, tryOnMode };
         const response = await fetch('/api/generate-moodboard', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         if (response.status !== 202) { throw new Error('Failed to start moodboard generation.'); }
         pollForTryOns(boardId);

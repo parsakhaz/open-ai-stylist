@@ -37,6 +37,9 @@ interface AppState {
   // Auto-Style feature toggle
   isAutoStyleModeEnabled: boolean;
   
+  // Try-on mode selection
+  tryOnMode: "performance" | "balanced" | "quality";
+  
   // Processing state for background tasks
   processingMoodboards: Set<string>; // Board IDs currently being processed
   completedMoodboards: Set<string>; // Board IDs that just completed processing
@@ -60,6 +63,9 @@ interface AppState {
   deleteMoodboard: (boardId: string) => void;
   deleteAllMoodboards: () => void;
   removeMoodboardItem: (boardId: string, itemId: string) => void;
+  
+  // Try-on mode management
+  setTryOnMode: (mode: "performance" | "balanced" | "quality") => void;
   
   // Processing state management
   setMoodboardProcessing: (boardId: string) => void;
@@ -85,6 +91,9 @@ export const useAppStore = create<AppState>()(
       
       // Initialize Auto-Style mode
       isAutoStyleModeEnabled: false,
+      
+      // Initialize try-on mode
+      tryOnMode: "performance",
       
       // Initialize processing state
       processingMoodboards: new Set<string>(),
@@ -158,6 +167,9 @@ export const useAppStore = create<AppState>()(
       },
       toggleAutoStyleMode: () => {
         set((state) => ({ isAutoStyleModeEnabled: !state.isAutoStyleModeEnabled }));
+      },
+      setTryOnMode: (mode) => {
+        set({ tryOnMode: mode });
       },
       toggleProductSelection: (product) => {
         set((state) => {
@@ -328,6 +340,7 @@ export const useAppStore = create<AppState>()(
           selectedProducts: state.selectedProducts,
           moodboards: state.moodboards,
           isAutoStyleModeEnabled: state.isAutoStyleModeEnabled,
+          tryOnMode: state.tryOnMode,
           chatSessions: state.chatSessions, // Persist the chat list
           chatMessages: state.chatMessages, // Persist the chat messages
           activeChatId: state.activeChatId,

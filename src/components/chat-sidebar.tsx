@@ -5,8 +5,103 @@ import { usePathname } from 'next/navigation';
 import { useAppStore } from '@/app/store/useAppStore';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { PlusCircle, MessageSquare, X, Palette, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import { PlusCircle, MessageSquare, X, Palette, ChevronLeft, ChevronRight, Zap, BarChart3, Sparkles, ChevronDown } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+
+// Mode selector component
+function ModeSelector() {
+  const { tryOnMode, setTryOnMode } = useAppStore();
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const modeOptions = [
+    {
+      value: "performance" as const,
+      label: "Performance", 
+      description: "Quick results with reduced quality",
+      icon: <Zap className="w-4 h-4" />,
+      color: "text-orange-600"
+    },
+    {
+      value: "balanced" as const,
+      label: "Balanced",
+      description: "Good balance of speed and quality",
+      icon: <BarChart3 className="w-4 h-4" />,
+      color: "text-blue-600"
+    },
+    {
+      value: "quality" as const,
+      label: "Quality",
+      description: "Best quality, slower processing",
+      icon: <Sparkles className="w-4 h-4" />,
+      color: "text-purple-600"
+    }
+  ];
+
+  const currentMode = modeOptions.find(mode => mode.value === tryOnMode);
+
+  return (
+    <div className="p-3 border-t border-gray-200 bg-gray-50/50">
+      <div className="mb-2">
+        <label className="text-xs font-medium text-gray-600 mb-1 block">Try-On Mode</label>
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="w-full h-8 px-3 text-xs bg-white border border-gray-300 rounded-md hover:border-gray-400 transition-colors flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2">
+              <span className={currentMode?.color}>{currentMode?.icon}</span>
+              <span className="font-medium">{currentMode?.label}</span>
+            </div>
+            <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {isOpen && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+              {modeOptions.map((mode) => (
+                <button
+                  key={mode.value}
+                  onClick={() => {
+                    setTryOnMode(mode.value);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full p-2 text-left hover:bg-gray-50 transition-colors ${
+                    mode.value === tryOnMode ? 'bg-purple-50' : ''
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className={mode.color}>{mode.icon}</span>
+                    <div>
+                      <div className="font-medium text-gray-900 text-xs">{mode.label}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">{mode.description}</div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="text-xs text-gray-500">
+        Current: <span className="font-medium text-gray-700">{currentMode?.label}</span>
+      </div>
+    </div>
+  );
+}
 
 export function ChatSidebar() {
   const { 
@@ -197,6 +292,9 @@ export function ChatSidebar() {
           </div>
         </ScrollArea>
       </div>
+
+      {/* Mode Selector - Always at bottom when not collapsed */}
+      {!isCollapsed && <ModeSelector />}
 
       {/* Footer Actions */}
       {!isCollapsed && chatSessions.length > 6 && (

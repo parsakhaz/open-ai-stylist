@@ -52,9 +52,9 @@ async function getApprovedModelUrl(): Promise<string | null> {
     }
 }
 
-async function processTryOnsInBackground(boardId: string, products: Product[], categorization: any) {
+async function processTryOnsInBackground(boardId: string, products: Product[], categorization: any, mode: "performance" | "balanced" | "quality" = "performance") {
     try {
-        console.log(`[BACKGROUND] Starting try-on generation for moodboard: ${boardId}`);
+        console.log(`[BACKGROUND] Starting try-on generation for moodboard: ${boardId} with mode: ${mode}`);
         
         const tryOnPromises = products.map(async (product) => {
             try {
@@ -65,8 +65,8 @@ async function processTryOnsInBackground(boardId: string, products: Product[], c
                     return { productId: product.id, tryOnUrl: product.imageUrl };
                 }
                 
-                console.log(`[BACKGROUND] Using model image ${modelImageUrl} for product ${product.id}`);
-                const url = await generateAndSaveTryOnImage(modelImageUrl, product.imageUrl);
+                console.log(`[BACKGROUND] Using model image ${modelImageUrl} for product ${product.id} with mode: ${mode}`);
+                const url = await generateAndSaveTryOnImage(modelImageUrl, product.imageUrl, mode);
                 return { productId: product.id, tryOnUrl: url };
             } catch (error) {
                 console.error(`[BACKGROUND] Failed to generate try-on for product ${product.id}:`, error);
@@ -94,11 +94,14 @@ async function processTryOnsInBackground(boardId: string, products: Product[], c
 
 export async function POST(req: Request) {
     try {
-        const { selectedProducts, existingMoodboards, boardId }: { 
+        const { selectedProducts, existingMoodboards, boardId, tryOnMode }: { 
             selectedProducts: Product[], 
             existingMoodboards: MoodboardSummary[],
-            boardId: string
+            boardId: string,
+            tryOnMode?: "performance" | "balanced" | "quality"
         } = await req.json();
+
+        console.log(`[generate-moodboard] Received tryOnMode: ${tryOnMode}, will use: ${tryOnMode || "performance"}`);
 
         const productDescriptions = selectedProducts.map(p => p.name).join(', ');
         const boardSummaries = existingMoodboards.map(b => `"${b.title}": ${b.description}`).join('; ');
@@ -111,7 +114,7 @@ export async function POST(req: Request) {
             prompt,
         });
 
-        processTryOnsInBackground(boardId, selectedProducts, categorizationResult);
+        processTryOnsInBackground(boardId, selectedProducts, categorizationResult, tryOnMode || "performance");
         
         console.log(`[API] Fired off background task for board ${boardId}. Returning immediate response.`);
         

@@ -62,10 +62,15 @@ async function pollForCompletion(predictionId: string): Promise<string> {
  * Generates a virtual try-on image, downloads it, and saves it locally.
  * @param modelImageUrl - The public URL of the model image (e.g., /uploads/model.jpg).
  * @param garmentImageUrl - The public URL of the garment image (e.g., https://m.media-amazon.com/...).
+ * @param mode - The processing mode: "performance", "balanced", or "quality" (default: "performance").
  * @returns The public URL of the locally saved try-on image (e.g., /uploads/try-on-uuid.png).
  */
-export async function generateAndSaveTryOnImage(modelImageUrl: string, garmentImageUrl: string): Promise<string> {
-    console.log(`[FASHN Service] Starting try-on for model: ${modelImageUrl} and garment: ${garmentImageUrl}`);
+export async function generateAndSaveTryOnImage(
+    modelImageUrl: string, 
+    garmentImageUrl: string, 
+    mode: "performance" | "balanced" | "quality" = "performance"
+): Promise<string> {
+    console.log(`[FASHN Service] Starting try-on for model: ${modelImageUrl} and garment: ${garmentImageUrl} with mode: ${mode}`);
 
     try {
         // Convert the local model image path to base64
@@ -78,10 +83,22 @@ export async function generateAndSaveTryOnImage(modelImageUrl: string, garmentIm
                 model_image: modelImageBase64,
                 garment_image: garmentImageUrl,
                 category: "auto", // 'auto' is robust
-                mode: "quality",   // Use 'quality' for final moodboards
+                mode: mode,   // Use the provided mode parameter
                 return_base64: false, // We want the CDN URL to download from
             }
         };
+
+        // Debug logging
+        console.log(`[FASHN Service] Request payload:`, {
+            model_name: inputData.model_name,
+            inputs: {
+                model_image: modelImageBase64 ? 'base64 data present' : 'missing',
+                garment_image: garmentImageUrl,
+                category: inputData.inputs.category,
+                mode: inputData.inputs.mode,
+                return_base64: inputData.inputs.return_base64
+            }
+        });
 
         // 1. Start the prediction
         const runResponse = await fetch(`${BASE_URL}/run`, {
