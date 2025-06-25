@@ -45,8 +45,8 @@ async function pollForCompletion(predictionId: string): Promise<string> {
                 // The result is an array, we'll take the first image URL
                 return statusData.output[0];
             } else if (["starting", "in_queue", "processing"].includes(statusData.status)) {
-                console.log(`[FASHN Service] Prediction ${predictionId} status: ${statusData.status}. Polling again in 3s.`);
-                await new Promise(resolve => setTimeout(resolve, 3000));
+                console.log(`[FASHN Service] Prediction ${predictionId} status: ${statusData.status}. Polling again in 1s.`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
             } else {
                 console.error(`[FASHN Service] Prediction ${predictionId} failed:`, statusData.error);
                 throw new Error(statusData.error || 'Prediction failed with an unknown error.');
