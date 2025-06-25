@@ -73,11 +73,14 @@ export async function generateAndSaveTryOnImage(modelImageUrl: string, garmentIm
         const modelImageBase64 = await localFileToBase64(modelLocalPath);
 
         const inputData = {
-            model_image: modelImageBase64,
-            garment_image: garmentImageUrl,
-            category: "auto", // 'auto' is robust
-            mode: "quality",   // Use 'quality' for final moodboards
-            return_base64: false, // We want the CDN URL to download from
+            model_name: "tryon-v1.6",
+            inputs: {
+                model_image: modelImageBase64,
+                garment_image: garmentImageUrl,
+                category: "auto", // 'auto' is robust
+                mode: "quality",   // Use 'quality' for final moodboards
+                return_base64: false, // We want the CDN URL to download from
+            }
         };
 
         // 1. Start the prediction
