@@ -47,7 +47,7 @@ async function getApprovedModelUrl(): Promise<string | null> {
     }
 }
 
-async function runProactiveStyling(adviceText: string, mode: "performance" | "balanced" | "quality" = "performance") {
+async function runProactiveStyling(adviceText: string, mode: "performance" | "balanced" | "quality" = "performance", boardId?: string) {
   try {
     // 1. AI analyzes its own advice to decide what to search for
     const { object: searchDecision } = await generateObject({
@@ -88,7 +88,7 @@ ${adviceText}`,
 Make the title and description feel appropriate for ${searchDecision.detectedGender} fashion while being creative and inspiring.`,
     });
 
-    const boardId = uuidv4();
+    const finalBoardId = boardId || uuidv4();
 
     // 4. Generate Try-Ons for the products
     const tryOnUrlMap: Record<string, string> = {};
@@ -103,7 +103,7 @@ Make the title and description feel appropriate for ${searchDecision.detectedGen
 
     // 5. Assemble the final Moodboard object
     const newBoard: Moodboard = {
-      id: boardId,
+      id: finalBoardId,
       title: boardDetails.title,
       description: boardDetails.description,
       items: selectedProducts.map(p => ({
@@ -116,10 +116,10 @@ Make the title and description feel appropriate for ${searchDecision.detectedGen
     await fetch(`${appURL}/api/notify-try-on-complete`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ boardId, newBoard }), // Send the full board object
+      body: JSON.stringify({ boardId: finalBoardId, newBoard }), // Send the full board object
     });
 
-    console.log(`[proactive-generator] Successfully created and notified for new board: ${boardId}`);
+    console.log(`[proactive-generator] Successfully created and notified for new board: ${finalBoardId}`);
 
   } catch (error) {
     console.error('[proactive-generator] Error during background processing:', error);
@@ -135,11 +135,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing adviceText' }, { status: 400 });
     }
 
+    // Start the process and return the board ID for polling
+    const boardId = uuidv4();
+    
     // Don't wait for the process to finish. This makes the API call non-blocking.
-    runProactiveStyling(adviceText, tryOnMode || "performance");
+    runProactiveStyling(adviceText, tryOnMode || "performance", boardId);
 
-    // Immediately return a success response to the client.
-    return NextResponse.json({ message: 'Proactive styling process initiated.' }, { status: 202 });
+    // Immediately return a success response with the board ID.
+    return NextResponse.json({ message: 'Proactive styling process initiated.', boardId }, { status: 202 });
   } catch (error) {
     console.error('[proactive-generator] Critical API Error:', error);
     return NextResponse.json({ error: 'An internal server error occurred' }, { status: 500 });

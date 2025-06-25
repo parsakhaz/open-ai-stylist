@@ -240,10 +240,17 @@ export default function ChatPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ adviceText: lastMessage.content, tryOnMode }),
-      }).then(response => {
+      }).then(async response => {
         console.log('[Auto-Style] API response:', response.status);
         if (response.ok) {
           toast('🪄 Auto-styling with search...', { icon: <Sparkles className="w-4 h-4 text-purple-400" /> });
+          
+          // Get the board ID from the response and start polling
+          const data = await response.json();
+          if (data.boardId) {
+            console.log('[Auto-Style] Starting polling for auto-generated board:', data.boardId);
+            pollForTryOns(data.boardId);
+          }
         } else {
           console.error('[Auto-Style] API call failed:', response.status);
         }
@@ -363,16 +370,21 @@ export default function ChatPage() {
         const data = await res.json();
         if (data.status === 'completed') {
           clearInterval(interval);
+          console.log('[pollForTryOns] Board completed:', { boardId, hasNewBoard: !!data.newBoard, hasTryOnUrlMap: !!data.tryOnUrlMap });
+          
           if (data.newBoard) {
             // This is an auto-generated board, add it directly.
+            console.log('[pollForTryOns] Adding auto-generated board:', data.newBoard.title);
             addCompletedMoodboard(data.newBoard);
+            toast.success('✨ New auto-generated moodboard created!');
           } else {
             // This is a manually created board, update it.
+            console.log('[pollForTryOns] Updating manual board with try-ons');
             updateMoodboardWithTryOns(boardId, data.tryOnUrlMap, data.categorization);
+            toast.success('✨ Moodboard upgraded with virtual try-ons!');
           }
           setMoodboardCompleted(boardId);
           triggerCelebrationConfetti();
-          toast.success('✨ Moodboard upgraded with virtual try-ons!');
         } else if (data.status === 'processing' && pollCount >= maxPolls) {
           clearInterval(interval);
           setMoodboardCompleted(boardId);
