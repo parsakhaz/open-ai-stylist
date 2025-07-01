@@ -118,7 +118,7 @@ export async function POST(req: Request) {
               content: [
                 {
                   type: "text",
-                  text: `As a professional fashion stylist, analyze this image and provide a brief but comprehensive assessment covering: skin tone/undertones, body shape, current style, and outfit analysis. Be concise but thorough - this will be used to provide styling advice. User's question: "${userText}"`
+                  text: `As a professional fashion stylist, analyze this image and provide a brief but comprehensive assessment covering: gender context (men/women/unisex), skin tone/undertones, body shape, current style, and outfit analysis. Be concise but thorough - this will be used to provide styling advice. User's question: "${userText}"`
                 },
                 {
                   type: "image_url",
@@ -167,30 +167,24 @@ export async function POST(req: Request) {
         // Use normal AI SDK flow with the enhanced text message
         const result = streamText({
           model: llama('Llama-4-Maverick-17B-128E-Instruct-FP8'),
-                     system: `You are "StyleList", a professional AI fashion stylist specializing in clothing and outfits. The user has provided an image which has been analyzed for you. 
+                     system: `You are "StyleList", a professional AI fashion stylist. The user has provided an image which has been analyzed for you.
 
-           **Styling Response Format:**
-           - Provide comprehensive styling advice with specific outfit suggestions and color recommendations
-           - Use markdown formatting (##, **, *, lists) to make responses easy to read
-           - Be warm, encouraging, and actionable
-           
-           **IMPORTANT: Clothing Focus:**
-           - Focus on clothing items: tops (shirts, blouses, sweaters), bottoms (pants, jeans, skirts), dresses, full-body garments, outerwear (jackets, blazers, coats), and loungewear
-           - Do NOT suggest shoes, accessories, jewelry, belts, handbags, or other non-clothing items
-           - When giving styling advice, concentrate on layering, fit, colors, and silhouettes of clothing pieces
-           
-           **CRITICAL: Product Search Handling:**
-           - Do NOT make tool calls automatically 
-           - Do NOT show tool call syntax like [searchProducts(...)]
-           - Instead, end your advice by asking: "Which clothing item would you like me to find for you first?" and list 2-3 specific clothing items
-           - Examples: "Ready to shop? I can help you find: **dark green trousers**, **oversized blazer**, **floral midi dress**, or **black turtleneck**. Which catches your eye?"
-           - Wait for the user to choose, then make the appropriate tool call`,
+**Gender-Aware Styling:**
+- Always detect if styling for men, women, or unisex context from the image analysis
+- Include gender-specific terms in product searches (e.g., "men's dress shirt" vs "women's blouse")
+- Consider gender-appropriate fits, styles, and cuts
+
+**Response Flow:**
+- Give one focused styling response with specific recommendations (4-6 sentences)
+- Then search for the most important clothing item mentioned
+- Focus on clothing only: tops, bottoms, dresses, outerwear, loungewear
+- NO shoes, accessories, jewelry, bags`,
           messages: textOnlyMessages,
                       tools: {
               searchProducts: tool({
                 description: 'Search for clothing items based on styling recommendations. Focus on clothing like shirts, blouses, sweaters, jackets, blazers, pants, jeans, skirts, shorts, dresses, coats, loungewear. Do NOT search for shoes, accessories, handbags, jewelry, or other non-clothing items.',
                 parameters: z.object({
-                  query: z.string().describe('Product search query for clothing items only based on styling advice'),
+                  query: z.string().describe('Product search query for clothing items only. MUST include gender-specific terms (e.g., "men\'s white dress shirt", "women\'s high-waisted jeans", "unisex oversized hoodie") based on the detected gender context.'),
                   itemType: z.string().optional().describe('Clothing category like "pants", "jeans", "shirts", "jackets", "skirts", "sweaters", "dresses", "coats"'),
                 }),
                 execute: async ({ query }): Promise<RichProduct[]> => {
@@ -212,66 +206,26 @@ export async function POST(req: Request) {
     const result = streamText({
       model: llama('Llama-4-Maverick-17B-128E-Instruct-FP8'),
 
-      // --- IMPROVED SYSTEM PROMPT: Now handles image inputs ---
-      system: `You are "StyleList", a professional AI fashion stylist specializing in clothing and outfits. You provide comprehensive styling advice like a real personal stylist would.
+      system: `You are "StyleList", a professional AI fashion stylist.
 
-      **Response Format:**
-      - Use markdown formatting (##, **, *, lists) to make responses easy to read
-      - Be warm, encouraging, and actionable like a professional stylist
+      **Gender-Aware Styling:**
+      - Always detect if styling for men, women, or unisex context from user messages/images
+      - Include gender-specific terms in product searches (e.g., "men's chinos" vs "women's trousers")
+      - Consider gender-appropriate fits, styles, and cuts
 
-      **IMPORTANT: Clothing Focus:**
-      - Focus on clothing items: tops (shirts, blouses, sweaters), bottoms (pants, jeans, skirts), dresses, full-body garments, outerwear (jackets, blazers, coats), and loungewear
-      - Do NOT suggest shoes, accessories, jewelry, belts, handbags, or other non-clothing items
-      - When giving styling advice, concentrate on layering, fit, colors, and silhouettes of clothing pieces
-
-      **For Fashion Advice & Styling Questions:**
-      
-      When users ask for fashion advice, consider these key factors like a real stylist:
-      - **Skin Tone & Undertones:** Ask about or assess their coloring to suggest flattering colors
-      - **Body Shape:** Consider proportions and suggest styles that enhance their figure
-      - **Lifestyle & Occasions:** Understand their daily needs and special events
-      - **Personal Style Goals:** What aesthetic they want to achieve
-      - **Budget & Practicality:** Suggest versatile clothing pieces that work with their lifestyle
-      
-      **Provide Comprehensive Advice:**
-      - Suggest 2-3 complete outfit ideas using clothing combinations (tops + bottoms, dresses, layered looks)
-      - Recommend color palettes that work with their skin tone
-      - Give specific styling tips (tucking, layering, proportions) for clothing
-      - Suggest versatile clothing pieces that can be styled multiple ways
-      
-      **CRITICAL: Product Search Handling:**
-      
-      **Step 1: ASSESS QUERY SPECIFICITY**
-      - VAGUE queries (like just "jeans", "shirts") need MORE INFO before searching
-      - SPECIFIC queries (like "black skinny jeans", "oversized hoodie for streetwear") have ENOUGH INFO to search
-      
-      **Step 2A: GATHER MORE DETAILS (if vague)**
-      - Ask about their style preferences, occasions, body type, and color preferences
-      - Do NOT make a tool call yet. Wait for their response with more details.
-      
-      **Step 2B: ASK USER TO CHOOSE (for styling advice)**
-      - When giving styling advice, do NOT make tool calls automatically
-      - Instead, end by asking: "Which clothing item would you like me to find for you first?" and list 2-3 specific clothing items
-      - Example: "Ready to shop? I can help you find: **black skinny jeans**, **oversized blazer**, **midi wrap dress**, or **white button-down shirt**. Which interests you most?"
-      - Wait for the user to choose, then make the appropriate tool call
-      
-      **Step 2C: DIRECT TOOL CALL (for specific product requests)**
-      - When user specifically asks for a product (like "find me black jeans"), make the tool call directly
-      - **CRITICAL: INCORPORATE CONVERSATION CONTEXT** - Consider their previously mentioned style preferences, skin tone, body type, etc.
-      
-      **After Product Results:**
-      - Present results with styling advice specific to their body type and coloring
-      - Suggest how to style the pieces for their lifestyle
-      - Always end with: "What else would you like to see?" or styling follow-up questions
-      
-      **CRITICAL FAILURE INSTRUCTION:** If the \`searchProducts\` tool returns an empty array ([]), inform the user and suggest alternative search terms.`,
+      **Response Flow:**
+      - Give one focused styling response with specific recommendations (4-6 sentences)
+      - Then search for the most important clothing item mentioned
+      - For vague requests like "jeans" - ask one quick question about style/fit, then search
+      - Focus on clothing only: tops, bottoms, dresses, outerwear, loungewear
+      - NO shoes, accessories, jewelry, bags`,
 
       messages: processedMessages.filter(m => typeof m.content === 'string' || !Array.isArray(m.content)), // Only text messages
               tools: {
           searchProducts: tool({
             description: 'Searches the product catalog for clothing items based on a user query. Focus on clothing like shirts, blouses, sweaters, jackets, blazers, pants, jeans, skirts, shorts, dresses, coats, loungewear. Do NOT search for shoes, accessories, handbags, jewelry, or other non-clothing items.',
             parameters: z.object({
-              query: z.string().describe('The user\'s search query for clothing items only. Be descriptive and incorporate conversation context. E.g., if user mentioned "korean minimal" earlier and now wants "black jacket", search for "korean minimal black jacket".'),
+              query: z.string().describe('The user\'s search query for clothing items only. MUST include gender-specific terms (e.g., "men\'s korean minimal black jacket", "women\'s high-waisted skinny jeans") and incorporate conversation context.'),
               itemType: z.string().optional().describe('Specific clothing category like "pants", "jeans", "shirts", "jackets", "skirts", "sweaters", "dresses", "coats".'),
             }),
           execute: async ({ query }): Promise<RichProduct[]> => {

@@ -281,11 +281,11 @@ function TryOnModal({
           className="relative max-w-full max-h-full flex flex-col items-center"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="relative bg-white rounded-lg overflow-hidden shadow-2xl max-h-[70vh]">
+          <div className="relative bg-white rounded-lg overflow-hidden shadow-2xl">
             <img 
               src={currentItem.tryOnUrl} 
               alt={currentItem.name}
-              className="max-w-full max-h-full object-contain"
+              className="max-w-[85vw] max-h-[75vh] object-contain"
             />
           </div>
           
@@ -430,7 +430,7 @@ export default function GalleryPage() {
   const { moodboards, deleteAllMoodboards } = useAppStore();
   const router = useRouter();
   const [isDeletingAll, setIsDeletingAll] = useState(false);
-  const [activeTab, setActiveTab] = useState<'try-ons' | 'moodboards'>('try-ons');
+  const [activeTab, setActiveTab] = useState<'try-ons' | 'moodboards'>('moodboards');
 
   const handleDeleteAll = async () => {
     if (confirm(`Are you sure you want to delete all ${moodboards.length} moodboards? This action cannot be undone.`)) {
@@ -535,6 +535,22 @@ export default function GalleryPage() {
             {/* Tab Navigation */}
             <div className="flex bg-white/80 backdrop-blur-sm rounded-lg border border-gray-200 p-1">
               <button
+                onClick={() => setActiveTab('moodboards')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  activeTab === 'moodboards'
+                    ? 'bg-black text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <Grid3X3 className="w-4 h-4" />
+                Moodboards
+                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                  activeTab === 'moodboards' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-600'
+                }`}>
+                  {moodboards.length}
+                </span>
+              </button>
+              <button
                 onClick={() => setActiveTab('try-ons')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
                   activeTab === 'try-ons'
@@ -551,22 +567,6 @@ export default function GalleryPage() {
                     {totalTryOns}
                   </span>
                 )}
-              </button>
-              <button
-                onClick={() => setActiveTab('moodboards')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  activeTab === 'moodboards'
-                    ? 'bg-black text-white shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                <Grid3X3 className="w-4 h-4" />
-                Moodboards
-                <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  activeTab === 'moodboards' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-600'
-                }`}>
-                  {moodboards.length}
-                </span>
               </button>
             </div>
           </div>
