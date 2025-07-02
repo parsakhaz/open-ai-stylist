@@ -3,7 +3,7 @@
 import { useAppStore } from '../store/useAppStore';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { UploadCloud, X, Loader2, CheckCircle, XCircle, Clock, User, Info, Plus, MessageSquare, Bookmark, ArrowRight, Palette } from 'lucide-react';
+import { UploadCloud, X, Loader2, CheckCircle, XCircle, Clock, User, Info, Plus, MessageSquare, Bookmark, ArrowRight, Palette, Camera } from 'lucide-react';
 import Link from 'next/link';
 
 export default function GalleryLayout({
@@ -199,6 +199,18 @@ export default function GalleryLayout({
                 View all chats →
               </Link>
             )}
+          </div>
+        )}
+
+        {/* Change Photos Button */}
+        {!isCollapsed && (
+          <div className="p-4 border-t border-gray-200">
+            <Link href="/onboarding">
+              <Button className="w-full bg-black hover:bg-gray-800 text-white rounded-lg py-2 text-sm font-medium">
+                <Camera className="w-4 h-4 mr-2" />
+                Change Photos
+              </Button>
+            </Link>
           </div>
         )}
       </div>

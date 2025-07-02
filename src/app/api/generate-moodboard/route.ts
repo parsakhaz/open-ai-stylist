@@ -1,27 +1,34 @@
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { NextResponse } from 'next/server';
+import { createOpenAI } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 import { z } from 'zod';
-// IMPORT THE CORRECT PRODUCT TYPE FROM OUR CENTRAL STORE
-import { Product } from '@/app/store/useAppStore';
+import { v4 as uuidv4 } from 'uuid';
+import { RichProduct } from '@/lib/amazon.service';
+import { generateAndSaveTryOnImage } from '@/lib/fashn.service';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { generateAndSaveTryOnImage } from '@/lib/fashn.service';
+import { Moodboard } from '@/app/store/useAppStore';
 
 console.log('[api/generate-moodboard] Module loaded.');
 
-export const maxDuration = 120; // INCREASE DURATION to allow for multiple API calls
+export const maxDuration = 300; // 5 minutes to allow background processing
 
-// This is the URL of our Next.js app.
-// It's crucial for server-to-server API calls.
+// Environment variables for app URL
 const vercelURL = process.env.VERCEL_URL;
 const appURL = vercelURL ? `https://${vercelURL}` : 'http://localhost:3000';
 
 // FIX: Point the baseURL to the new /api/v1 path.
-const llama = createOpenAICompatible({
-  baseURL: `${appURL}/api/v1`,
-  name: 'llama',
-  // No API key is needed here, because the proxy handles it.
+const openRouterClient = createOpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: process.env.OPENROUTER_API_KEY,
+  headers: {
+    'HTTP-Referer': appURL,
+    'X-Title': 'OpenAI Stylist',
+  },
 });
+
+// Model to use for all requests
+const MODEL_NAME = 'google/gemini-2.5-flash';
 
 // Correct: Define a schema for the categorization result
 const categorizationSchema = z.object({
@@ -52,7 +59,7 @@ async function getApprovedModelUrl(): Promise<string | null> {
     }
 }
 
-async function processTryOnsInBackground(boardId: string, products: Product[], categorization: any, mode: "performance" | "balanced" | "quality" = "performance") {
+async function processTryOnsInBackground(boardId: string, products: RichProduct[], categorization: any, mode: "performance" | "balanced" | "quality" = "performance") {
     try {
         console.log(`[BACKGROUND] Starting try-on generation for moodboard: ${boardId} with mode: ${mode}`);
         
@@ -95,7 +102,7 @@ async function processTryOnsInBackground(boardId: string, products: Product[], c
 export async function POST(req: Request) {
     try {
         const { selectedProducts, existingMoodboards, boardId, tryOnMode }: { 
-            selectedProducts: Product[], 
+            selectedProducts: RichProduct[], 
             existingMoodboards: MoodboardSummary[],
             boardId: string,
             tryOnMode?: "performance" | "balanced" | "quality"
@@ -108,10 +115,15 @@ export async function POST(req: Request) {
         const prompt = `A user has selected these items: "${productDescriptions}". Their boards are: ${boardSummaries || 'None'}. Decide if they fit an existing board or need a new one.`;
 
         const { object: categorizationResult } = await generateObject({
-            model: llama('Llama-4-Maverick-17B-128E-Instruct-FP8'),
+            model: openRouterClient(MODEL_NAME),
             schema: categorizationSchema,
-            system: `You are an AI mood board curator. Decide how to categorize a user's selected items.`,
-            prompt,
+            system: 'You are a fashion stylist helping organize moodboards. You decide whether to add products to an existing mood board or create a new one based on style coherence.',
+            prompt: `You have these existing mood boards:
+${existingMoodboards.map(board => `- "${board.title}": ${board.description}`).join('\n')}
+
+You need to categorize these new products: ${selectedProducts.map(p => p.name).join(', ')}
+
+Should these products be added to an existing board or create a new board? If adding to existing, choose the most stylistically similar board. If creating new, suggest a creative title and description.`,
         });
 
         processTryOnsInBackground(boardId, selectedProducts, categorizationResult, tryOnMode || "performance");

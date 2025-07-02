@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useAppStore } from '@/app/store/useAppStore';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { PlusCircle, MessageSquare, X, Palette, ChevronLeft, ChevronRight, Zap, BarChart3, Sparkles, ChevronDown } from 'lucide-react';
+import { PlusCircle, MessageSquare, X, Palette, ChevronLeft, ChevronRight, Zap, BarChart3, Sparkles, ChevronDown, Camera } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 
 // Mode selector component
@@ -296,9 +296,21 @@ export function ChatSidebar() {
       {/* Mode Selector - Always at bottom when not collapsed */}
       {!isCollapsed && <ModeSelector />}
 
+      {/* Change Photos Button */}
+      {!isCollapsed && (
+        <div className="p-4 border-t border-gray-200">
+          <Link href="/onboarding">
+            <Button className="w-full bg-black hover:bg-gray-800 text-white rounded-lg py-2 text-sm font-medium">
+              <Camera className="w-4 h-4 mr-2" />
+              Change Photos
+            </Button>
+          </Link>
+        </div>
+      )}
+
       {/* Footer Actions */}
       {!isCollapsed && chatSessions.length > 6 && (
-        <div className="p-4 border-t border-gray-200">
+        <div className="px-4 pb-4 border-t border-gray-200">
           <div className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer">
             Showing recent chats
           </div>

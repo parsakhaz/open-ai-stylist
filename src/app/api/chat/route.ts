@@ -1,5 +1,5 @@
 import { streamText, tool, type Message } from 'ai';
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { createOpenAI } from '@ai-sdk/openai';
 import { z } from 'zod';
 import { NextResponse } from 'next/server';
 import { searchAndTransformProducts, RichProduct } from '@/lib/amazon.service';
@@ -15,13 +15,18 @@ export const maxDuration = 30;
 const vercelURL = process.env.VERCEL_URL;
 const appURL = vercelURL ? `https://${vercelURL}` : 'http://localhost:3000';
 
-// FIX: Point the baseURL to the new /api/v1 path.
-// The SDK will automatically add "/chat/completions" to this.
-const llama = createOpenAICompatible({
-  baseURL: `${appURL}/api/v1`,
-  name: 'llama',
-  // No API key is needed here, because the proxy handles it.
+// Configure OpenAI client to use OpenRouter
+const openRouterClient = createOpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: process.env.OPENROUTER_API_KEY,
+  headers: {
+    'HTTP-Referer': appURL,
+    'X-Title': 'OpenAI Stylist',
+  },
 });
+
+// Model to use for all requests - Gemini 2.5 Flash has excellent vision and reasoning capabilities
+const MODEL_NAME = 'google/gemini-2.5-flash';
 
 // We no longer need local product catalog since we're using real Amazon API
 
@@ -111,7 +116,7 @@ export async function POST(req: Request) {
       if (imageUrl) {
         // First, analyze the image using direct API call (non-streaming)
         const imageAnalysisPayload = {
-          model: "Llama-4-Maverick-17B-128E-Instruct-FP8",
+          model: MODEL_NAME,
           messages: [
             {
               role: "user",
@@ -166,8 +171,8 @@ export async function POST(req: Request) {
 
         // Use normal AI SDK flow with the enhanced text message
         const result = streamText({
-          model: llama('Llama-4-Maverick-17B-128E-Instruct-FP8'),
-                     system: `You are "StyleList", a professional AI fashion stylist. The user has provided an image which has been analyzed for you.
+          model: openRouterClient(MODEL_NAME),
+          system: `You are "StyleList", a professional AI fashion stylist. The user has provided an image which has been analyzed for you.
 
 **Gender-Aware Styling:**
 - Always detect if styling for men, women, or unisex context from the image analysis
@@ -180,7 +185,7 @@ export async function POST(req: Request) {
 - Focus on clothing only: tops, bottoms, dresses, outerwear, loungewear
 - NO shoes, accessories, jewelry, bags`,
           messages: textOnlyMessages,
-                      tools: {
+          tools: {
               searchProducts: tool({
                 description: 'Search for clothing items based on styling recommendations. Focus on clothing like shirts, blouses, sweaters, jackets, blazers, pants, jeans, skirts, shorts, dresses, coats, loungewear. Do NOT search for shoes, accessories, handbags, jewelry, or other non-clothing items.',
                 parameters: z.object({
@@ -204,7 +209,7 @@ export async function POST(req: Request) {
     console.log(`[api/chat] Using AI SDK for text-only messages`);
 
     const result = streamText({
-      model: llama('Llama-4-Maverick-17B-128E-Instruct-FP8'),
+      model: openRouterClient(MODEL_NAME),
 
       system: `You are "StyleList", a professional AI fashion stylist.
 
@@ -221,7 +226,7 @@ export async function POST(req: Request) {
       - NO shoes, accessories, jewelry, bags`,
 
       messages: processedMessages.filter(m => typeof m.content === 'string' || !Array.isArray(m.content)), // Only text messages
-              tools: {
+      tools: {
           searchProducts: tool({
             description: 'Searches the product catalog for clothing items based on a user query. Focus on clothing like shirts, blouses, sweaters, jackets, blazers, pants, jeans, skirts, shorts, dresses, coats, loungewear. Do NOT search for shoes, accessories, handbags, jewelry, or other non-clothing items.',
             parameters: z.object({

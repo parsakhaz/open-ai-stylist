@@ -18,7 +18,7 @@
   </p>
 
   <p align="center">
-    <img src="https://img.shields.io/badge/AI%20Model-Llama--4--Maverick-FF6B35?style=for-the-badge&logo=meta&logoColor=white" alt="AI Model" />
+    <img src="https://img.shields.io/badge/AI%20Model-Gemini--2.5--Flash-FF6B35?style=for-the-badge&logo=google&logoColor=white" alt="AI Model" />
     <img src="https://img.shields.io/badge/API-Amazon%20Products-FF9900?style=for-the-badge&logo=amazon&logoColor=white" alt="Amazon API" />
     <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License" />
   </p>
@@ -66,7 +66,7 @@ An AI-powered fashion styling application that provides personalized clothing re
 ## ✨ Features
 
 ### Core Functionality
-- **AI Fashion Stylist**: Conversational interface powered by Llama-4-Maverick-17B model
+- **AI Fashion Stylist**: Conversational interface powered by Gemini 2.5 Flash via OpenRouter
 - **Auto-Style Mode**: ✨ **NEW** - Automatically generates moodboards from styling advice with gender-aware product searches
 - **Image Analysis**: Upload photos to receive personalized styling recommendations
 - **Product Search**: Integration with Amazon product catalog via RapidAPI
@@ -96,7 +96,7 @@ An AI-powered fashion styling application that provides personalized clothing re
 - **Server actions** for form handling and data processing
 
 ### AI Integration
-- **Llama-4-Maverick-17B-128E-Instruct-FP8** model for fashion expertise
+- **Gemini 2.5 Flash** model via OpenRouter for fashion expertise
 - **Vision capabilities** for image analysis and styling recommendations
 - **Tool calling** for product search integration
 - **Custom system prompts** optimized for fashion styling
@@ -124,8 +124,7 @@ npm install
 3. Configure environment variables:
 Create a `.env.local` file with the following:
 ```env
-LLAMA_API_KEY=your_llama_api_key_here
-LLAMA_API_BASE_URL=https://api.llama.com/v1
+OPENROUTER_API_KEY=your_openrouter_api_key_here
 FASHN_API_KEY=your_fashn_api_key_here
 
 # Real-Time Amazon Data API Credentials
@@ -236,14 +235,13 @@ src/
 ## Configuration
 
 ### Environment Variables
-- `LLAMA_API_KEY`: Authentication key for Llama AI model
-- `LLAMA_API_BASE_URL`: Base URL for Llama API endpoint
+- `OPENROUTER_API_KEY`: Authentication key for OpenRouter API (replaces LLAMA_API_KEY)
 - `FASHN_API_KEY`: Authentication key for Fashion API services
 - `RAPIDAPI_KEY`: Authentication key for Amazon product API
 - `RAPIDAPI_HOST`: API host endpoint for product search
 
 ### Model Configuration
-The application uses Llama-4-Maverick-17B-128E-Instruct-FP8 with custom system prompts optimized for:
+The application uses Gemini 2.5 Flash via OpenRouter with custom system prompts optimized for:
 - Fashion styling expertise
 - Focus on tops and bottoms (excluding accessories)
 - Professional styling advice

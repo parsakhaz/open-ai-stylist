@@ -10,7 +10,8 @@ import {
   MessageSquare, 
   ChevronLeft, 
   ChevronRight,
-  Plus
+  Plus,
+  Camera
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -166,6 +167,18 @@ export function GallerySidebar() {
           </Link>
         )}
       </div>
+
+      {/* Change Photos Button */}
+      {!isCollapsed && (
+        <div className="p-4 border-t border-gray-200">
+          <Link href="/onboarding">
+            <Button className="w-full bg-black hover:bg-gray-800 text-white rounded-lg py-2 text-sm font-medium">
+              <Camera className="w-4 h-4 mr-2" />
+              Change Photos
+            </Button>
+          </Link>
+        </div>
+      )}
 
     </div>
   );
