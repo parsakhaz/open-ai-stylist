@@ -7,40 +7,36 @@ export async function POST(req: Request) {
     const body = await req.json();
     const isStreaming = body.stream === true;
 
-    // --- FINAL FIX: Intelligently construct the correct API URL ---
-    // This robustly handles if LLAMA_API_BASE_URL is `https://api.llama.com` or `https://api.llama.com/v1`
-    const baseUrl = new URL(process.env.LLAMA_API_BASE_URL!);
-    // We construct the final URL by setting the pathname directly, which avoids duplicate segments.
-    const llamaApiUrl = new URL('/compat/v1/chat/completions', baseUrl).toString();
+    // Updated to use OpenRouter API endpoint
+    const openRouterApiUrl = 'https://openrouter.ai/api/v1/chat/completions';
     
-    console.log(`[llama-proxy] Forwarding request to: ${llamaApiUrl}`);
+    console.log(`[openrouter-proxy] Forwarding request to: ${openRouterApiUrl}`);
 
-    const response = await fetch(llamaApiUrl, {
+    const response = await fetch(openRouterApiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.LLAMA_API_KEY}`,
+        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'HTTP-Referer': process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000',
+        'X-Title': 'OpenAI Stylist',
       },
       body: JSON.stringify(body),
     });
 
     if (!response.ok) {
         const errorText = await response.text();
-        console.error("Llama API Error:", errorText);
-        return new NextResponse(JSON.stringify({ error: `Llama API failed: ${errorText}` }), { status: response.status });
+        console.error("OpenRouter API Error:", errorText);
+        return new NextResponse(JSON.stringify({ error: `OpenRouter API failed: ${errorText}` }), { status: response.status });
     }
 
-    // --- LOGIC TO HANDLE BOTH STREAMING AND NON-STREAMING ---
+    // Handle both streaming and non-streaming responses
     if (isStreaming) {
       if (!response.body) {
           return new NextResponse("The response body is empty for streaming.", { status: 500 });
       }
 
-      // --- FIX: Pass the stream directly through ---
-      // The Llama /compat/v1 endpoint already returns an OpenAI-compatible stream.
-      // We don't need to transform it; we can just forward it.
-      // This eliminates the risk of incorrect transformations.
-      console.log('[llama-proxy] Passing stream through directly without transformation.');
+      // OpenRouter returns an OpenAI-compatible stream, forward it directly
+      console.log('[openrouter-proxy] Passing stream through directly without transformation.');
       
       return new Response(response.body, {
           headers: { 
@@ -50,14 +46,13 @@ export async function POST(req: Request) {
           }
       });
     } else {
-      // If not streaming, just return the raw JSON from Llama.
-      // The `validate-image` route will handle this specific format.
-      const llamaJson = await response.json();
-      return NextResponse.json(llamaJson);
+      // If not streaming, return the raw JSON from OpenRouter
+      const openRouterJson = await response.json();
+      return NextResponse.json(openRouterJson);
     }
 
   } catch (error) {
-    console.error('[llama-proxy] CRITICAL ERROR:', error);
+    console.error('[openrouter-proxy] CRITICAL ERROR:', error);
     return new NextResponse(JSON.stringify({ error: 'An internal proxy error occurred' }), { status: 500 });
   }
 } 

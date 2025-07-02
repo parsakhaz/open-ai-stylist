@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { generateObject } from 'ai';
+import { createOpenAI } from '@ai-sdk/openai';
+import { generateObject, streamText } from 'ai';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 import { searchAndTransformProducts, RichProduct } from '@/lib/amazon.service';
@@ -9,15 +9,24 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { Moodboard } from '@/app/store/useAppStore';
 
+console.log('[proactive-style-generator] Module loaded.');
+
 export const maxDuration = 180; // Allow 3 minutes for the full background process
 
 const vercelURL = process.env.VERCEL_URL;
 const appURL = vercelURL ? `https://${vercelURL}` : 'http://localhost:3000';
 
-const llama = createOpenAICompatible({
-  baseURL: `${appURL}/api/v1`,
-  name: 'llama',
+const openRouterClient = createOpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: process.env.OPENROUTER_API_KEY,
+  headers: {
+    'HTTP-Referer': appURL,
+    'X-Title': 'OpenAI Stylist',
+  },
 });
+
+// Model to use for all requests
+const MODEL_NAME = 'google/gemini-2.5-flash';
 
 // Zod schemas for AI-driven decisions
 const searchQueriesSchema = z.object({
@@ -51,18 +60,15 @@ async function runProactiveStyling(adviceText: string, mode: "performance" | "ba
   try {
     // 1. AI analyzes its own advice to decide what to search for
     const { object: searchDecision } = await generateObject({
-      model: llama('Llama-4-Maverick-17B-128E-Instruct-FP8'),
+      model: openRouterClient(MODEL_NAME),
       schema: searchQueriesSchema,
       system: "You are a fashion assistant. Your job is to read styling advice and extract 1-2 key, specific clothing items to create a style board from. Focus on unique, actionable items. Always detect the gender context (men/women/unisex) and include appropriate gender-specific search terms.",
       prompt: `Here is the styling advice. Extract the best items for a visual search and detect the gender context:
 
 IMPORTANT: 
 - Include gender-specific terms in your search queries (e.g., "men's dress shirt" not just "dress shirt")
-- Consider typical gendered clothing differences (e.g., men's vs women's fits, styles, etc.)
-- If gender is unclear, default to 'unisex' and use neutral terms
+- Consider typical gendered clothing differences (e.g., men's vs women's fits, styles)
 
-Styling advice:
----
 ${adviceText}`,
     });
 
@@ -80,12 +86,16 @@ ${adviceText}`,
 
     // 3. AI generates title & description for the new board
     const { object: boardDetails } = await generateObject({
-      model: llama('Llama-4-Maverick-17B-128E-Instruct-FP8'),
+      model: openRouterClient(MODEL_NAME),
       schema: boardDetailsSchema,
-      system: `You are a creative director for a fashion app. Create a compelling title and description for a moodboard. Consider the gender context: ${searchDecision.detectedGender}.`,
-      prompt: `Create a title and description for a ${searchDecision.detectedGender === 'unisex' ? '' : searchDecision.detectedGender + "'s"} moodboard featuring: ${selectedProducts.map(p => p.name).join(', ')}.
+      system: "You are a creative director who creates catchy titles and descriptions for fashion mood boards.",
+      prompt: `Create a short, catchy title and description for a mood board based on these styling elements:
 
-Make the title and description feel appropriate for ${searchDecision.detectedGender} fashion while being creative and inspiring.`,
+${adviceText}
+
+Products found: ${selectedProducts.map(p => p.name).join(', ')}
+
+The title should be 3-5 words and capture the essence/vibe of the style.`,
     });
 
     const finalBoardId = boardId || uuidv4();
