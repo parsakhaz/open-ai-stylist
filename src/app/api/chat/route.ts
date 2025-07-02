@@ -183,7 +183,10 @@ export async function POST(req: Request) {
 - Give one focused styling response with specific recommendations (4-6 sentences)
 - Then search for the most important clothing item mentioned
 - Focus on clothing only: tops, bottoms, dresses, outerwear, loungewear
-- NO shoes, accessories, jewelry, bags`,
+CRITICAL:
+- Do NOT show tool call syntax like [searchProducts(...)]
+- NO shoes, accessories, jewelry, bags
+- Examples: "Ready to shop? I can help you find: **dark green trousers**, **oversized blazer**, **floral midi dress**, or **black turtleneck**. Which catches your eye?"`,
           messages: textOnlyMessages,
           tools: {
               searchProducts: tool({
