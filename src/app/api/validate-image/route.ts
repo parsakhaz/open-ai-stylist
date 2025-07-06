@@ -83,8 +83,8 @@ export async function POST(req: Request) {
       ? `You are an AI judge. Analyze this image to see if it's suitable for a virtual fashion try-on. The image should contain exactly one person, fully visible from head to toe. That's it - just needs to be a single person full body shot. Your response MUST be a valid JSON object with this exact structure: {"approved": true/false, "reason": "5-7 word explanation"}. Do not include any other text, explanations, or formatting. Only return the JSON object.`
       : `You are an AI judge. Analyze this image to see if it's suitable for a virtual fashion try-on. The image MUST contain exactly one person, fully visible from head to toe. The person should be wearing simple, form-fitting clothing (e.g., t-shirt and leggings), not baggy clothes or multiple layers. Your response MUST be a valid JSON object with this exact structure: {"approved": true/false, "reason": "5-7 word explanation"}. Do not include any other text, explanations, or formatting. Only return the JSON object.`;
     
-    const openRouterRequestPayload = {
-      model: "google/gemini-2.5-flash",
+    const llmClientRequestPayload = {
+      model: process.env.LLM_CLIENT_MODAL,
       messages: [
         {
           role: "user",
@@ -103,14 +103,14 @@ export async function POST(req: Request) {
       stream: false, // This is crucial for getting a single JSON response
     };
 
-    // 3. Call OUR OWN PROXY with the OpenRouter-specific payload
+    // 3. Call OUR OWN PROXY with the llmClient-specific payload
     // FIX: Update the URL to the full, correct path of our proxy
     const proxyUrl = `${appURL}/api/v1/chat/completions`;
     console.log(`[validate-image] Calling internal proxy at: ${proxyUrl}`);
     const proxyResponse = await fetch(proxyUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(openRouterRequestPayload),
+      body: JSON.stringify(llmClientRequestPayload),
     });
 
     if (!proxyResponse.ok) {
@@ -122,7 +122,7 @@ export async function POST(req: Request) {
     const responseData = await proxyResponse.json();
     console.log('[validate-image] OpenAI-compatible response received via proxy:', JSON.stringify(responseData, null, 2));
 
-    // --- FIX: The OpenRouter endpoint returns a standard OpenAI response structure. ---
+    // --- FIX: The llmClient endpoint returns a standard OpenAI response structure. ---
     // We now need to look inside `choices[0].message.content` instead of `completion_message`.
     const aiResponseText = responseData.choices?.[0]?.message?.content;
     if (!aiResponseText) {

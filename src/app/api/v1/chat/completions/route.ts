@@ -7,16 +7,15 @@ export async function POST(req: Request) {
     const body = await req.json();
     const isStreaming = body.stream === true;
 
-    // Updated to use OpenRouter API endpoint
-    const openRouterApiUrl = 'https://openrouter.ai/api/v1/chat/completions';
-    
-    console.log(`[openrouter-proxy] Forwarding request to: ${openRouterApiUrl}`);
+    // Updated to use llmClient API endpoint
+    const llmClientApiUrl = `${process.env.LLM_CLIENT_ENDPOINT}/chat/completions`;
+    console.log(`[llmclient-proxy] Forwarding request to: ${llmClientApiUrl}`);
 
-    const response = await fetch(openRouterApiUrl, {
+    const response = await fetch(llmClientApiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'Authorization': `Bearer ${process.env.LLM_CLIENT_API_KEY}`,
         'HTTP-Referer': process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000',
         'X-Title': 'OpenAI Stylist',
       },
@@ -25,8 +24,8 @@ export async function POST(req: Request) {
 
     if (!response.ok) {
         const errorText = await response.text();
-        console.error("OpenRouter API Error:", errorText);
-        return new NextResponse(JSON.stringify({ error: `OpenRouter API failed: ${errorText}` }), { status: response.status });
+        console.error("LLM Client API Error:", errorText);
+        return new NextResponse(JSON.stringify({ error: `LLM Client API failed: ${errorText}` }), { status: response.status });
     }
 
     // Handle both streaming and non-streaming responses
@@ -35,8 +34,8 @@ export async function POST(req: Request) {
           return new NextResponse("The response body is empty for streaming.", { status: 500 });
       }
 
-      // OpenRouter returns an OpenAI-compatible stream, forward it directly
-      console.log('[openrouter-proxy] Passing stream through directly without transformation.');
+      // llmClient returns an OpenAI-compatible stream, forward it directly
+      console.log('[llmclient-proxy] Passing stream through directly without transformation.');
       
       return new Response(response.body, {
           headers: { 
@@ -46,13 +45,13 @@ export async function POST(req: Request) {
           }
       });
     } else {
-      // If not streaming, return the raw JSON from OpenRouter
-      const openRouterJson = await response.json();
-      return NextResponse.json(openRouterJson);
+      // If not streaming, return the raw JSON from llmClient
+      const llmClientJson = await response.json();
+      return NextResponse.json(llmClientJson);
     }
 
   } catch (error) {
-    console.error('[openrouter-proxy] CRITICAL ERROR:', error);
+    console.error('[llmclient-proxy] CRITICAL ERROR:', error);
     return new NextResponse(JSON.stringify({ error: 'An internal proxy error occurred' }), { status: 500 });
   }
 } 

@@ -16,9 +16,9 @@ export const maxDuration = 180; // Allow 3 minutes for the full background proce
 const vercelURL = process.env.VERCEL_URL;
 const appURL = vercelURL ? `https://${vercelURL}` : 'http://localhost:3000';
 
-const openRouterClient = createOpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY,
+const llmClient = createOpenAI({
+  baseURL: process.env.LLM_CLIENT_ENDPOINT,
+  apiKey: process.env.LLM_CLIENT_API_KEY,
   headers: {
     'HTTP-Referer': appURL,
     'X-Title': 'OpenAI Stylist',
@@ -26,7 +26,7 @@ const openRouterClient = createOpenAI({
 });
 
 // Model to use for all requests
-const MODEL_NAME = 'google/gemini-2.5-flash';
+const MODEL_NAME = process.env.LLM_CLIENT_MODAL;
 
 // Zod schemas for AI-driven decisions
 const searchQueriesSchema = z.object({
@@ -60,7 +60,7 @@ async function runProactiveStyling(adviceText: string, mode: "performance" | "ba
   try {
     // 1. AI analyzes its own advice to decide what to search for
     const { object: searchDecision } = await generateObject({
-      model: openRouterClient(MODEL_NAME),
+      model: llmClient(MODEL_NAME),
       schema: searchQueriesSchema,
       system: "You are a fashion assistant. Your job is to read styling advice and extract 1-2 key, specific clothing items to create a style board from. Focus on unique, actionable items. Always detect the gender context (men/women/unisex) and include appropriate gender-specific search terms.",
       prompt: `Here is the styling advice. Extract the best items for a visual search and detect the gender context:
@@ -86,7 +86,7 @@ ${adviceText}`,
 
     // 3. AI generates title & description for the new board
     const { object: boardDetails } = await generateObject({
-      model: openRouterClient(MODEL_NAME),
+      model: llmClient(MODEL_NAME),
       schema: boardDetailsSchema,
       system: "You are a creative director who creates catchy titles and descriptions for fashion mood boards.",
       prompt: `Create a short, catchy title and description for a mood board based on these styling elements:
