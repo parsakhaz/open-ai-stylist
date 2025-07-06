@@ -15,18 +15,18 @@ export const maxDuration = 30;
 const vercelURL = process.env.VERCEL_URL;
 const appURL = vercelURL ? `https://${vercelURL}` : 'http://localhost:3000';
 
-// Configure OpenAI client to use OpenRouter
-const openRouterClient = createOpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY,
+// Configure OpenAI client to use llmClient
+const llmClient = createOpenAI({
+  baseURL: process.env.LLM_CLIENT_ENDPOINT,
+  apiKey: process.env.LLM_CLIENT_API_KEY,
   headers: {
     'HTTP-Referer': appURL,
     'X-Title': 'OpenAI Stylist',
   },
 });
 
-// Model to use for all requests - Gemini 2.5 Flash has excellent vision and reasoning capabilities
-const MODEL_NAME = 'google/gemini-2.5-flash';
+// Model to use for all requests
+const MODEL_NAME = process.env.LLM_CLIENT_MODAL;
 
 // We no longer need local product catalog since we're using real Amazon API
 
@@ -171,7 +171,7 @@ export async function POST(req: Request) {
 
         // Use normal AI SDK flow with the enhanced text message
         const result = streamText({
-          model: openRouterClient(MODEL_NAME),
+          model: llmClient(MODEL_NAME),
           system: `You are "StyleList", a professional AI fashion stylist. The user has provided an image which has been analyzed for you.
 
 **Gender-Aware Styling:**
@@ -212,7 +212,7 @@ CRITICAL:
     console.log(`[api/chat] Using AI SDK for text-only messages`);
 
     const result = streamText({
-      model: openRouterClient(MODEL_NAME),
+      model: llmClient(MODEL_NAME),
 
       system: `You are "StyleList", a professional AI fashion stylist.
 

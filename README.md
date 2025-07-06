@@ -124,7 +124,9 @@ npm install
 3. Configure environment variables:
 Create a `.env.local` file with the following:
 ```env
-OPENROUTER_API_KEY=your_openrouter_api_key_here
+LLM_CLIENT_ENDPOINT=your_llm_client_endpoint_here
+LLM_CLIENT_MODAL=your_llm_client_model_here
+LLM_CLIENT_API_KEY=your_llm_client_api_key_here
 FASHN_API_KEY=your_fashn_api_key_here
 
 # Real-Time Amazon Data API Credentials
@@ -235,13 +237,25 @@ src/
 ## Configuration
 
 ### Environment Variables
-- `OPENROUTER_API_KEY`: Authentication key for OpenRouter API (replaces LLAMA_API_KEY)
+- `LLM_CLIENT_ENDPOINT`: API endpoint for llm client
+
+      - For OpenRouter, use https://openrouter.ai/api/v1
+      - For Groq, use https://api.groq.com/openai/v1
+
+- `LLM_CLIENT_MODAL`: Open IA Modal
+
+      - For OpenRouter, use 'google/gemini-2.5-flash'
+      - For Groq, use 'meta-llama/llama-4-scout-17b-16e-instruct'
+
+- `LLM_CLIENT_API_KEY`: Authentication key for LLM Client API
 - `FASHN_API_KEY`: Authentication key for Fashion API services
 - `RAPIDAPI_KEY`: Authentication key for Amazon product API
 - `RAPIDAPI_HOST`: API host endpoint for product search
 
 ### Model Configuration
-The application uses Gemini 2.5 Flash via OpenRouter with custom system prompts optimized for:
+The application can use multiple modal via OpenRouter, Groq, etc...
+
+It recommands to use Gemini 2.5 Flash via OpenRouter with custom system prompts optimized for:
 - Fashion styling expertise
 - Focus on tops and bottoms (excluding accessories)
 - Professional styling advice

@@ -106,3 +106,5 @@ temp/
 # Development file uploads and data
 /public/uploads/
 data/model-images.json
+
+.env.local

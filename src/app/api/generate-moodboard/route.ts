@@ -18,9 +18,9 @@ const vercelURL = process.env.VERCEL_URL;
 const appURL = vercelURL ? `https://${vercelURL}` : 'http://localhost:3000';
 
 // FIX: Point the baseURL to the new /api/v1 path.
-const openRouterClient = createOpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY,
+const llmClient = createOpenAI({
+  baseURL: process.env.LLM_CLIENT_ENDPOINT,
+  apiKey: process.env.LLM_CLIENT_API_KEY,
   headers: {
     'HTTP-Referer': appURL,
     'X-Title': 'OpenAI Stylist',
@@ -28,7 +28,7 @@ const openRouterClient = createOpenAI({
 });
 
 // Model to use for all requests
-const MODEL_NAME = 'google/gemini-2.5-flash';
+const MODEL_NAME = process.env.LLM_CLIENT_MODAL;
 
 // Correct: Define a schema for the categorization result
 const categorizationSchema = z.object({
@@ -115,7 +115,7 @@ export async function POST(req: Request) {
         const prompt = `A user has selected these items: "${productDescriptions}". Their boards are: ${boardSummaries || 'None'}. Decide if they fit an existing board or need a new one.`;
 
         const { object: categorizationResult } = await generateObject({
-            model: openRouterClient(MODEL_NAME),
+            model: llmClient(MODEL_NAME),
             schema: categorizationSchema,
             system: 'You are a fashion stylist helping organize moodboards. You decide whether to add products to an existing mood board or create a new one based on style coherence.',
             prompt: `You have these existing mood boards:
